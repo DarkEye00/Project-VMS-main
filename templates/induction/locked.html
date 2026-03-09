@@ -1,0 +1,37 @@
+{% extends "pre.html" %}
+{% block content %}
+<div class="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+  <div class="max-w-xl bg-white border border-red-200 rounded-2xl shadow-xl p-8 text-center">
+    
+    <div class="text-red-600 text-5xl mb-4">⛔</div>
+
+    <h1 class="text-2xl font-bold text-slate-800 mb-3">
+      Maximum Attempts Reached
+    </h1>
+
+    <p class="text-slate-600 mb-4">
+      You have attempted the safety induction quiz {{ attempts }} times and did not meet the required pass mark.
+    </p>
+
+    <p class="text-slate-700 font-medium mb-6">
+      Please contact your host or report to the security desk for assistance.
+    </p>
+
+    <div class="bg-slate-50 border rounded-xl p-4 text-left text-sm">
+      <p><strong>Visitor:</strong> {{ visitor.name }}</p>
+      <p><strong>Pass ID:</strong> {{ visitor.visitor_id }}</p>
+      {% if host %}
+        <p><strong>Host:</strong> {{ host.get_full_name|default:host.username }}</p>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<script>
+  setTimeout(() => {
+    const notify = document.getElementById("notify");
+    if (notify) notify.style.display = "none";
+  }, 2000);
+</script>
+{% endblock %}

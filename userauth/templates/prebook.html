@@ -1,0 +1,201 @@
+{% extends "host_nav.html" %}
+{% block content %}
+
+<section class="min-h-screen font-sans text-slate-800">
+  <main class="flex-1 p-4 sm:p-6 md:p-8 space-y-8">
+    <section class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-2xl mx-auto overflow-hidden transition-all">
+      
+      <div class=" px-6 py-5 border-b-4 border-emerald-500">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-black text-black uppercase tracking-[0.2em]">Visitor Registry</h2>
+            <p class="text-emerald-400 text-[10px] font-bold uppercase mt-1 tracking-widest flex items-center gap-1">
+              <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+              Pre-Authorization Portal
+            </p>
+          </div>
+          <div class="p-2 bg-slate-800 rounded-lg shadow-inner">
+            <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 md:p-10">
+        {% if messages %}
+          {% for message in messages %}
+            <div id="notify" class="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-3 animate-in fade-in slide-in-from-top-4">
+              <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1 9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+              <span class="text-xs font-bold uppercase tracking-tight">{{ message }}</span>
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        {% if visitor %}
+          <div class="rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50/30 p-6 md:p-8 animate-in zoom-in-95 duration-300">
+            <div class="text-center mb-6">
+              <div class="inline-flex items-center justify-center w-12 h-12 bg-emerald-500 text-white rounded-full mb-3 shadow-lg shadow-emerald-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <h3 class="text-lg font-black text-slate-900 uppercase tracking-tight">Pre-Booking Confirmed</h3>
+              <p class="text-slate-500 text-xs mt-1">Digital access credentials generated successfully.</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-emerald-100 divide-y divide-slate-50 overflow-hidden">
+              <div class="p-4 flex justify-between items-center bg-slate-50/50">
+                <span class="text-[10px] font-black text-slate-400 uppercase">Security Pass ID</span>
+                <span class="font-mono text-emerald-700 font-bold tracking-tighter">{{ visitor.visitor_id }}</span>
+              </div>
+              <div class="p-4 grid grid-cols-2 gap-4 text-sm">
+                <div><p class="text-[9px] font-bold text-slate-400 uppercase">Visitor Name</p><p class="font-bold text-slate-800">{{ form.instance.name }}</p></div>
+                <div><p class="text-[9px] font-bold text-slate-400 uppercase">Contact</p><p class="font-medium text-slate-600 truncate">{{ form.instance.email }}</p></div>
+                <div><p class="text-[9px] font-bold text-slate-400 uppercase">Location</p><p class="font-bold text-slate-800">{{ form.instance.venue }}</p></div>
+                <div><p class="text-[9px] font-bold text-slate-400 uppercase">Arrival Date</p><p class="font-bold text-slate-800">{{ form.instance.visit_date }}</p></div>
+              </div>
+            </div>
+
+            <div class="mt-8 flex justify-center">
+              <a href="{% url 'userauth:prebook' %}" class="px-8 py-3 bg-slate-900 text-white text-[11px] font-black rounded-xl uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-200 active:scale-95">
+                Back to Registry
+              </a>
+            </div>
+          </div>
+
+        {% else %}
+          <form method="POST" action="{% url 'userauth:prebook' %}" class="grid grid-cols-1 gap-5 md:grid-cols-2">
+            {% csrf_token %}
+
+            <div class="md:col-span-2">
+              <label class="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] ml-1 mb-1.5 block">Full Legal Name</label>
+              <input type="text" name="name" required placeholder="Full Name"
+                class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl outline-none focus:border-emerald-500 focus:bg-white transition-all font-medium text-slate-800 placeholder:text-slate-300 shadow-sm">
+            </div>
+
+            <div class="md:col-span-2">
+              <label class="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] ml-1 mb-1.5 block">Email Address</label>
+              <input type="email" name="email" required placeholder="Email"
+                class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl outline-none focus:border-emerald-500 focus:bg-white transition-all font-medium text-slate-800 placeholder:text-slate-300 shadow-sm">
+            </div>
+
+            <div class="md:col-span-2">
+              <label class="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] ml-1 mb-1.5 block">Representing Organization</label>
+              <input type="text" name="company" required placeholder="Company"
+                class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl outline-none focus:border-emerald-500 focus:bg-white transition-all font-medium text-slate-800 placeholder:text-slate-300 shadow-sm">
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] ml-1 block">Facility / Site</label>
+              <select name="site" id="site-select" required
+                class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl outline-none focus:border-emerald-500 focus:bg-white transition-all font-medium text-slate-800 appearance-none shadow-sm">
+                <option value="">-- Select Site --</option>
+                <option value="Katko Complex">Katko Complex, Nairobi</option>
+                <option value="SF Hayat">Sunflag Hayat, Nairobi</option>
+                <option value="SF Unilever">Sunflag UKL, Nairobi</option>
+                <option value="Mombasa Branch">Mombasa Site</option>
+                <option value="Tanzania Branch">Tanzania Site</option>
+                <option value="Uganda Branch">Uganda Site</option>
+              </select>
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] ml-1 block">Internal Venue</label>
+              <select name="venue" id="venue-select" required
+                class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl outline-none focus:border-emerald-500 focus:bg-white transition-all font-medium text-slate-800 appearance-none shadow-sm">
+                <option value="">-- Select Venue --</option>
+                <option value="warehouse">Warehouse</option>
+                <option value="office">Office</option>
+                <option value="both">Warehouse & Office</option>
+              </select>
+            </div>
+            
+            <div class="md:col-span-2">
+              <label class="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] ml-1 mb-1.5 block">Date and Time of Arrival</label>
+              <input type="datetime-local" name="scheduled_date" required
+                class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl outline-none focus:border-emerald-500 focus:bg-white transition-all font-medium text-slate-800 shadow-sm">
+            </div>
+
+            <div class="md:col-span-2 space-y-1.5" id="boardroom-div" style="display:none;">
+              <label class="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] ml-1 block">Allocated Board Room</label>
+              <select name="boardroom" id="boardroom-select"
+                class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl outline-none focus:border-emerald-500 focus:bg-white transition-all font-medium text-slate-800 appearance-none shadow-sm">
+                <option value="">-- Select Board Room --</option>
+                <option value="boardroom1">SHOGUN (Exec Boardroom)</option>
+                <option value="boardroom2">Board Room 2</option>
+              </select>
+            </div>
+
+            <div class="md:col-span-2">
+              <label class="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] ml-1 mb-1.5 block">Purpose of Visit</label>
+              <textarea name="reason" required placeholder="Reason for visit"
+                class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl outline-none focus:border-emerald-500 focus:bg-white transition-all font-medium text-slate-800 h-32 resize-none shadow-sm"></textarea>
+            </div>
+
+            <div class="md:col-span-2 flex flex-col md:flex-row gap-4 pt-6">
+              <button type="submit"
+                class="flex-1 px-8 py-4 bg-emerald-600 text-white text-[11px] font-black rounded-xl uppercase tracking-[0.2em] hover:bg-emerald-700 transition-all border-b-4 border-emerald-800 active:border-b-0 active:translate-y-1 block shadow-lg shadow-emerald-100 cursor-pointer">
+                Authorize Pre-Booking
+              </button>
+              
+              <button type="button" onclick="showShareLink()"
+                class="flex-1 px-8 py-4 bg-white border-2 border-slate-200 text-slate-500 text-[11px] font-black rounded-xl uppercase tracking-[0.2em] hover:bg-slate-50 hover:text-slate-800 transition-all text-center flex items-center justify-center gap-2 cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                Self-Booking Link
+              </button>
+            </div>
+
+            <div id="shareLinkPopup" style="display:none;" class="fixed inset-0 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm z-50 p-4">
+              <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full border border-slate-200 animate-in zoom-in-95 duration-200">
+                <h3 class="text-xs font-black text-slate-900 uppercase tracking-[0.2em] mb-4 text-center">Share Booking URL</h3>
+                <div class="flex flex-col gap-3 mb-6">
+                  <input id="shareLinkInput" type="text" readonly
+                    class="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-lg font-mono text-[10px] text-slate-500 text-center select-all"
+                    value="https://app.offshoreafrica.org/user/guestselfcheckin/" />
+                  <button onclick="copyShareLink()" class="w-full py-4 bg-emerald-600 text-white text-[11px] font-black rounded-xl uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100">Copy to Clipboard</button>
+                </div>
+                <button onclick="closeShareLink()" class="w-full text-slate-400 text-[10px] font-black uppercase tracking-widest hover:text-slate-900 transition-colors">Dismiss</button>
+              </div>
+            </div>
+          </form>
+        {% endif %}
+      </div>
+    </section>
+  </main>
+</section>
+
+<script>
+  // Show/hide boardroom field based on venue selection
+  document.getElementById('venue-select').addEventListener('change', function () {
+    var boardroomDiv = document.getElementById('boardroom-div');
+    if (this.value === 'office') {
+      boardroomDiv.style.display = '';
+    } else {
+      boardroomDiv.style.display = 'none';
+      document.getElementById('boardroom-select').value = '';
+    }
+  });
+
+  function showShareLink() {
+    document.getElementById('shareLinkPopup').style.display = 'flex';
+  }
+  function closeShareLink() {
+    document.getElementById('shareLinkPopup').style.display = 'none';
+  }
+  function copyShareLink() {
+    var copyText = document.getElementById("shareLinkInput");
+    copyText.select();
+    copyText.setSelectionRange(0, 99999); // For mobile devices
+    document.execCommand("copy");
+    // Optional: show a quick notification
+    alert("Link copied to clipboard!");
+  }
+    setTimeout(() => {
+    const notify = document.getElementById("notify");
+    if (notify) notify.style.display = "none";
+  }, 2000);
+</script>
+{% endblock %}

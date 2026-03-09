@@ -1,0 +1,60 @@
+{% load static %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Visitor Management System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'output/output.css' %}">
+</head>
+
+<body class="text-gray-800 bg-gray-200">
+    <header class="bg-white shadow">
+        <div class="container mx-auto flex justify-between items-center py-4 px-6">
+            <img class="h-16 w-32" src="{% static 'images/JPEG LOGO.jpeg' %}" alt="OGL_LOGO">
+        </div>
+    </header>
+
+    <section class="min-h-screen bg-green-100 flex items-center justify-center px-4">
+        <div class="container mx-auto py-12">
+            <h1 class="text-2xl font-bold text-center mt-10 mb-8">Welcome to the Visitor Management System</h1>
+
+            <div class="flex flex-col md:flex-row gap-6 items-center justify-center">
+                <!-- Security Personnel Card -->
+                <div class="bg-white rounded-lg shadow p-6 w-full max-w-sm flex flex-col items-center">
+                    <img src="{% static 'images/security.png' %}" alt="Security" class="h-20 mb-4">
+                    <a href="{% url 'userauth:login' %}?role=Security" class="px-6 py-2 bg-green-600 text-white rounded hover:bg-gray-700 mt-2">Security Login</a>
+                    <h2 class="text-xl font-semibold mt-4 mb-2">Security Personnel</h2>
+                    <p class="text-gray-600 text-center">Access the security dashboard to manage visitor check-ins and check-outs.</p>
+                </div>
+
+                <!-- Host Card -->
+                <div class="bg-white rounded-lg shadow p-6 w-full max-w-sm flex flex-col items-center">
+                    <img src="{% static 'images/host.png' %}" alt="Host" class="h-20 mb-4">
+                    <a href="{% url 'userauth:login' %}?role=Host" class="px-6 py-2 bg-green-600 text-white rounded hover:bg-gray-700 mt-2">Host Login</a>
+                    <h2 class="text-xl font-semibold mt-4 mb-2">Host</h2>
+                    <p class="text-gray-600 text-center">Log in as a host to view, pre-book, and manage your visitors.</p>
+                </div>
+
+                <!-- Guest Self Check-In Card -->
+                <div class="bg-white rounded-lg shadow p-6 w-full max-w-sm flex flex-col items-center">
+                    <img src="{% static 'images/guest.png' %}" alt="Guest" class="h-20 mb-4">
+                    <a href="{% url 'guestselfcheckin' %}" class="px-6 py-2 bg-green-600 text-white rounded hover:bg-gray-700 mt-2">Guest Check-In</a>
+                    <h2 class="text-xl font-semibold mt-4 mb-2">Guest Self Check-In</h2>
+                    <p class="text-gray-600 text-center">Guests can confirm their attendance here.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    <script>window.$zoho=window.$zoho || {};$zoho.salesiq=$zoho.salesiq||{ready:function(){}}</script><script id="zsiqscript" src="https://salesiq.zoho.com/widget?wc=siq917c79da1a5fd95a0976eb4686a316664632d2fc2a70b5c8c00ea9d2b7460361" defer></script>
+    <script>
+          setTimeout(() => {
+    const notify = document.getElementById("notify");
+    if (notify) notify.style.display = "none";
+  }, 1000);
+    </script>
+</body>
+</html>
+{% endblock %}

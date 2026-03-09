@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    {% load static %}
+   
+    <title>Visitor Management System</title>
+    <link rel="stylesheet" href="{% static 'output/output.css' %}">
+     <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+  />
+</head>
+
+<body class="text-gray-800 bg-gray-200">
+    <header class="bg-white">
+          <div class="container mx-auto flex justify-between items-center py-4 px-6">
+            <img class="h-16 w-32" src="{% static 'images/JPEG LOGO.jpeg' %}" alt="OGL_LOGO">
+            <div>
+                <span class="text-sm">Welcome, {{ user.username }}</span>
+            </div>
+        </div>
+      </header>
+  <div class="flex flex-col md:flex-row min-h-screen">
+    <!-- Sidebar -->
+    <aside class="bg-green-900 text-white w-full md:w-64 p-4 space-y-6 md:min-h-screen sticky top-0 z-10">
+      <h1 class="text-xl md:text-2xl font-bold text-center md:text-left">DASHBOARD</h1>
+      <nav class="space-y-5">
+        <a href="{% url 'userauth:security' %}" class="block w-full px-4 py-2 bg-green-600 rounded hover:bg-gray-700 text-center md:text-left">Home</a>
+      <a href="{% url 'userauth:staff_check_in' %}"class="block w-full px-4 py-2 bg-green-600 rounded hover:bg-gray-700 text-center md:text-left">Staff CheckIn</a>
+      <button class="block w-full px-4 py-2 bg-green-600 rounded hover:bg-gray-700 text-center md:text-left">Shift Logs</button>
+      <button class="block w-full px-4 py-2 bg-red-700 rounded hover:bg-red-600 text-center md:text-left">Emergency Mode</button>
+       <a href="{% url 'userauth:password_change' %}" class="block w-full px-4 py-2 bg-green-600 rounded hover:bg-gray-700 text-center md:text-left">Change Password</a>
+
+      <a href="{% url 'userauth:logout' %}" class="block w-full px-4 py-2 bg-green-600 rounded hover:bg-gray-700 text-center md:text-left">Log Out</a>
+      </nav>
+      </aside>
+<main class="w-full flex">
+    {% block content %}
+    {% endblock %}
+</main>
+
+</body>
+
+</html>

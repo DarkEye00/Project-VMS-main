@@ -1,0 +1,79 @@
+{% extends 'host_nav.html' %}
+
+{% block content %}
+<section class="min-h-screen bg-[#fbfcfd] font-sans text-slate-600">
+  <div class="mt-10 p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
+    
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 px-4 gap-4">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+            <span class="h-[2px] w-8 bg-emerald-500 rounded-full"></span>
+            <h2 class="text-[10px] font-bold text-emerald-600 uppercase tracking-[0.3em]">Registry Archive</h2>
+        </div>
+        <h1 class="text-3xl font-extralight text-slate-800 tracking-tight">Historical Visitors</h1>
+      </div>
+      <div class="flex items-center gap-4 text-slate-400">
+        <p class="text-[9px] font-bold uppercase tracking-widest italic">Grid Alignment: Optimized</p>
+      </div>
+    </div>
+
+    <div class="overflow-hidden rounded-3xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-slate-100 transition-all">
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse table-fixed">
+          <thead>
+            <tr class="bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border-b border-emerald-100/50">
+              <th class="w-1/6 text-left text-emerald-700 text-[10px] font-bold uppercase tracking-[0.2em] px-8 py-5">Visitor</th>
+              <th class="w-1/6 text-left text-emerald-700 text-[10px] font-bold uppercase tracking-[0.2em] px-8 py-5">Company</th>
+              <th class="w-1/6 text-left text-emerald-700 text-[10px] font-bold uppercase tracking-[0.2em] px-8 py-5">Purpose</th>
+              <th class="w-1/6 text-left text-emerald-700 text-[10px] font-bold uppercase tracking-[0.2em] px-8 py-5">Host</th>
+              <th class="w-1/6 text-left text-emerald-700 text-[10px] font-bold uppercase tracking-[0.2em] px-8 py-5">Timeline</th>
+              <th class="w-1/6 text-right text-emerald-700 text-[10px] font-bold uppercase tracking-[0.2em] px-8 py-5">Site</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+            {% for visitor in historical_visitors %}
+              <tr class="group hover:bg-emerald-50/20 transition-all duration-200">
+                <td class="px-8 py-5">
+                  <span class="block text-sm font-light text-slate-800 group-hover:text-emerald-700 transition-colors truncate">{{ visitor.name }}</span>
+                </td>
+                <td class="px-8 py-5">
+                  <span class="text-xs text-slate-400 font-light truncate block">{{ visitor.company }}</span>
+                </td>
+                <td class="px-8 py-5">
+                  <span class="text-xs text-slate-400 font-light truncate block">{{ visitor.reason }}</span>
+                </td>
+                <td class="px-8 py-5 border-x border-slate-50/50">
+                  <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-500 font-light">{{ visitor.host.username }}</span>
+                  </div>
+                </td>
+                <td class="px-8 py-5">
+                  <div class="flex flex-col text-[10px] font-medium tracking-tight">
+                    <span class="text-emerald-600/60 transition-colors">In: {{ visitor.check_in|date:"H:i" }}</span>
+                    <span class="text-rose-400/60 transition-colors">Out: {{ visitor.check_out|date:"H:i" }}</span>
+                  </div>
+                </td>
+                <td class="px-8 py-5 text-right">
+                  <span class="inline-block px-3 py-1 bg-slate-50/50 border border-slate-100 text-slate-400 text-[9px] font-bold uppercase tracking-widest rounded-full group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-all">
+                    {{ visitor.site }}
+                  </span>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-24">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">Archive Clear</p>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="mt-8 flex items-center justify-between px-4">
+       <p class="text-[9px] text-slate-300 font-medium uppercase tracking-[0.3em]">System Synchronized • Equal Spacing Active</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

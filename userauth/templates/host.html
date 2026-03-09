@@ -1,0 +1,121 @@
+{% extends 'host_nav.html' %}
+{% block content %}
+
+<section class="min-h-screen bg-[#f8f9fa] font-sans text-slate-800">
+    <div class="bg-white border-b border-slate-200">
+        <div class="container mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="text-center md:text-left">
+                <h1 class="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-tight">
+                    Visitor Console <span class="text-emerald-600">.</span>
+                </h1>
+                <p class="text-slate-500 text-sm font-medium mt-1">Real-time oversight of scheduled arrivals and site occupancy.</p>
+            </div>
+            
+            <div class="hidden md:block w-48 h-20 overflow-hidden">
+                <lottie-player 
+                    src="https://assets10.lottiefiles.com/packages/lf20_jcikwtux.json"  
+                    background="transparent" speed="1" loop autoplay>
+                </lottie-player>
+            </div>
+        </div>
+    </div>
+
+    <main class="container mx-auto p-6 space-y-6">
+        
+        <div id="visitor-alerts" class="fixed top-6 right-6 z-50"></div>
+
+        <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <h2 class="text-xs font-bold text-slate-700 uppercase tracking-widest">Today's Scheduled Arrivals</h2>
+                </div>
+                
+                <form method="get" action="{% url 'userauth:export_csv' %}">
+                    <button type="submit" class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-white border border-slate-300 hover:text-slate-600 text-[11px] font-bold rounded uppercase bg-emerald-500 text-white transition-all shadow-sm">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Export CSV
+                    </button>
+                </form>
+            </div>
+
+            <div class="overflow-x-auto">
+                {% if visitors %}
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200">
+                            <th class="px-6 py-4">Visitor Details</th>
+                            <th class="px-6 py-4">Location</th>
+                            <th class="px-6 py-4">Security Status</th>
+                            <th class="px-6 py-4">Appointment</th>
+                            <th class="px-6 py-4 text-center">Site Status</th>
+                            <th class="px-6 py-4">Log</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for visitor in visitors %}
+                        <tr class="hover:bg-slate-50/50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="font-bold text-slate-900 text-sm">{{ visitor.name }}</div>
+                                <div class="text-[11px] text-slate-400 font-medium uppercase">{{ visitor.company }}</div>
+                            </td>
+                            <td class="px-6 py-4 text-xs font-medium text-slate-600">
+                                {{ visitor.site }}
+                            </td>
+                            <td class="px-6 py-4">
+                                {% if visitor.status == "scheduled" %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100 uppercase">
+                                        SCHEDULED
+                                    </span>
+                                {% elif visitor.status == "checked_in" %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
+                                        On-Site
+                                    </span>
+                                {% else %}
+                                    <span class="text-slate-300 text-[10px] font-bold uppercase">Archived</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-[11px] font-bold text-slate-700 uppercase">{{ visitor.scheduled_date|date:"D, d M" }}</div>
+                                <div class="text-xs text-slate-400">{{ visitor.scheduled_date|date:"H:i" }}</div>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                {% if visitor.status == "checked_out" %}
+                                    <div class="flex flex-col items-center">
+                                        <span class="w-6 h-6 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-xs">✓</span>
+                                        <span class="text-[9px] font-black text-emerald-600 uppercase mt-1">Cleared</span>
+                                    </div>
+                                {% else %}
+                                    <div class="flex flex-col items-center opacity-40">
+                                        <span class="w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 text-xs">—</span>
+                                        <span class="text-[9px] font-black text-slate-400 uppercase mt-1">Pending</span>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-[10px] text-slate-500 font-mono">
+                                    TIME_IN: {{ visitor.check_in|date:"H:i"|default:"--" }}<br>
+                                    TIME_OUT: {{ visitor.check_out|date:"H:i"|default:"--" }}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="p-12 text-center">
+                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-50 text-slate-300 mb-4">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <p class="text-sm font-bold text-slate-400 uppercase tracking-widest">No visitors scheduled for today</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</section>
+
+<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+
+{% endblock %}

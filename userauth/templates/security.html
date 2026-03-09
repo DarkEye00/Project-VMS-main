@@ -1,0 +1,452 @@
+{% extends "nav.html" %}
+{% block content %}
+<section class="min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div class="bg-white border-b border-slate-200 px-4 py-4 md:px-8">
+        <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <span class="w-2 h-8 bg-emerald-600 rounded-full"></span>
+            Security & Visitor Management
+        </h1>
+    </div>
+
+    <main class="p-4 md:p-8 space-y-8 max-w-[1600px] mx-auto">
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <section class="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-slate-200 self-start">
+                <div class="flex items-center gap-2 mb-4">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <h2 class="text-lg font-bold tracking-tight">Quick Pass Lookup</h2>
+                </div>
+
+                <form method="POST" class="space-y-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="pass_id_lookup" value="1">
+                    <input type="text" name="pass_id" placeholder="Enter Pass ID (e.g. WHS-A1B2)" required
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 transition-all outline-none">
+                    <button type="submit" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-lg hover:bg-green-800 transition-colors shadow-md shadow-green-100 uppercase text-sm tracking-wider cursor-pointer">
+                        Search Database
+                    </button>
+                </form>
+            </section>
+
+            <div class="lg:col-span-2">
+                {% if found_visitor %}
+                <div id="notify" class="bg-white rounded-xl shadow-lg border-l-4 border-green-500 overflow-hidden ">
+                    <div class="p-6">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800">{{ found_visitor.name }}</h3>
+                                <p class="text-sm text-slate-500 font-medium">{{ found_visitor.company }} • {{ found_visitor.email }}</p>
+                            </div>
+                            <span class="px-4 py-1.5 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase tracking-widest border border-green-200">
+                                {{ found_visitor.status }}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm bg-slate-50 p-4 rounded-lg border border-slate-100">
+                            <div><p class="text-slate-400 uppercase text-[10px] font-bold">Venue</p><p class="font-semibold">{{ found_visitor.venue }}</p></div>
+                            <div><p class="text-slate-400 uppercase text-[10px] font-bold">Date</p><p class="font-semibold">{{ found_visitor.scheduled_date }}</p></div>
+                            <div><p class="text-slate-400 uppercase text-[10px] font-bold">Reason</p><p class="font-semibold truncate">{{ found_visitor.reason }}</p></div>
+                        </div>
+
+                        {% if found_visitor.induction_required and not found_visitor.induction_passed %}
+                        <div class="mt-4 p-3 bg-red-50 border border-red-100 rounded-lg flex items-center gap-3 text-red-700">
+                            <svg class="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                            <p class="text-sm font-bold">Safety Induction Incomplete. Check-in strictly restricted.</p>
+                        </div>
+                        {% endif %}
+
+                        {% if found_visitor.status != "checked_in" %}
+                        <div class="mt-6 flex flex-wrap gap-3">
+                            <form method="POST">
+                                {% csrf_token %}
+                                <input type="hidden" name="confirm_checkin" value="1">
+                                <input type="hidden" name="pass_id" value="{{ found_visitor.visitor_id }}">
+                                <button type="submit"
+                                    class="px-6 py-2.5 text-sm font-bold rounded-lg transition-all shadow-md
+                                    {% if found_visitor.induction_required and not found_visitor.induction_passed %}
+                                      bg-slate-200 text-slate-400 cursor-not-allowed
+                                    {% else %}
+                                      bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-100
+                                    {% endif %}"
+                                    {% if found_visitor.induction_required and not found_visitor.induction_passed %}disabled{% endif %}>
+                                    Confirm Check-In
+                                </button>
+                            </form>
+
+                            <button type="button" onclick="document.getElementById('inductionBox').classList.toggle('hidden')"
+                                class="px-6 py-2.5 bg-white border border-slate-300 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-50 transition-all shadow-sm">
+                                View Induction Score
+                            </button>
+
+                            <form method="POST" onsubmit="return confirm('Reset induction for this visitor?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="reset_induction" value="1">
+                                <input type="hidden" name="pass_id" value="{{ found_visitor.visitor_id }}">
+                                <button type="submit" class="px-6 py-2.5 bg-white border border-red-200 text-red-600 text-sm font-bold rounded-lg hover:bg-red-50 transition-all">
+                                    Reset Induction
+                                </button>
+                            </form>
+                        </div>
+
+                        <div id="inductionBox" class="hidden mt-4 bg-slate-900 text-white rounded-lg p-5 animate-in fade-in zoom-in-95">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div><span class="text-slate-400 block text-xs">Induction Req:</span>{{ found_visitor.induction_required|yesno:"Yes,No" }}</div>
+                                <div><span class="text-slate-400 block text-xs">Status:</span>{{ found_visitor.induction_status }}</div>
+                                <div><span class="text-slate-400 block text-xs">Passed:</span>{{ found_visitor.induction_passed|yesno:"Yes,No" }}</div>
+                                <div><span class="text-slate-400 block text-xs">Current Score:</span>
+                                    {% if found_visitor.induction_score is not None %}{{ found_visitor.induction_score }}%{% else %}N/A{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="mt-4 flex items-center gap-2 text-emerald-600 font-bold">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path></svg>
+                            Visitor is Checked in.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <section class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-6 border-b border-slate-100 bg-slate-50/50">
+                    <h2 class="text-lg font-bold text-slate-800 uppercase tracking-wide">Manual Visitor Check-In</h2>
+                    <p class="text-xs text-slate-500 font-medium">Use this form for walk-in visitors without a pre-booked Pass ID.</p>
+                </div>
+                
+                <form method="POST" action="{% url 'userauth:security' %}" class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% csrf_token %}
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Full Name</label>
+                        <input type="text" name="name" required placeholder="Visitor's Legal Name"
+                            class="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all">
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Phone Number</label>
+                        <input type="text" name="phone" required placeholder="+254..."
+                            class="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Visitor National ID</label>
+                        <input type="text" name="visitor_id" required placeholder="ID / Passport Number"
+                            class="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Company / Org</label>
+                        <input type="text" name="company" placeholder="Entity Name"
+                            class="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Location/Site</label>
+                        <select name="site" id="site-select" required class="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-lg focus:ring-2 focus:ring-green-500">
+                            <option value="">-- Select --</option>
+                            <option value="Katko Complex">Katko Complex, Nairobi</option>
+                            <option value="SF Hayat">Sunflag Hayat, Nairobi</option>
+                            <option value="SF Unilever">Sunflag UKL, Nairobi</option>
+                            <option value="Mombasa Branch">Mombasa Site</option>
+                            <option value="Tanzania Branch">Tanzania Site</option>
+                            <option value="Uganda Branch">Uganda Site</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Check-In Time</label>
+                        <input type="datetime-local" name="check_in" value="{{ now|date:'Y-m-d\\TH:i' }}"
+                            class="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-lg">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Host</label>
+                        <select name="host" required class="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-lg focus:ring-2 focus:ring-green-500">
+                            <option value="">-- Choose Host --</option>
+                            {% for host in hosts %}
+                            <option value="{{ host.username }}">{{ host.get_full_name|default:host.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Premise Area</label>
+                        <select name="premise" required class="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-lg focus:ring-2 focus:ring-green-500">
+                            <option value="">-- Choose --</option>
+                            <option value="whs">Warehouse</option>
+                            <option value="ogl">Main Office</option>
+                            <option value="off">Both Office and Warehouse</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Pass ID</label>
+                        <div class="flex gap-3">
+                            <input type="text" id="pass_id_input" name="pass_id" required placeholder="Manually enter or auto-generate"
+                                class="flex-1 px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none ">
+                            <button type="button" onclick="generatePassID()"
+                                class="px-6 py-2.5 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-600 transition-all cursor-pointer">
+                                Auto-Generate
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Reason for Visit</label>
+                        <textarea name="reason" required placeholder="Specific nature of visit..."
+                            class="w-full px-4 py-3 border border-slate-200 bg-slate-50 rounded-lg focus:ring-2 focus:ring-green-500 h-28"></textarea>
+                    </div>
+
+                    <div class="md:col-span-2 pt-4">
+                        <button type="submit" class="w-full md:w-auto px-10 py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-100 uppercase tracking-widest transition-all cursor-pointer">
+                            Add & Check-In Visitor
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden self-start">
+                <div class="p-6 border-b border-slate-100">
+                    <h2 class="text-lg font-bold text-slate-800">Host Directory</h2>
+                </div>
+                <div class="p-4 bg-slate-50">
+                    <select class="w-full p-2.5 border border-slate-300 rounded-lg bg-white text-sm font-medium">
+                        <option>Filter by Department</option>
+                        <option>All Hosts</option>
+                    </select>
+                </div>
+                <ul class="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
+                    {% for host in hosts %}
+                    <li class="p-4 hover:bg-slate-50 transition-colors flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-bold">
+                            {{ host.username|slice:":2"|upper }}
+                        </div>
+                        <span class="text-sm font-semibold text-slate-700">{{ host.get_full_name|default:host.username }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        </div>
+
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-emerald-50/30">
+                <h2 class="text-lg font-bold text-slate-800">Visitors Currently On-Site</h2>
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                    <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-black uppercase">Live Logs</span>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+  <table class="w-full text-left">
+    <thead class="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase text-[10px] font-black tracking-widest">
+      <tr>
+        <th class="px-6 py-4">Visitor Name</th>
+        
+        <th class="px-6 py-4">Location</th>
+        <th class="px-6 py-4">Host</th>
+      
+        <th class="px-6 py-4">Last Induction</th>
+        <th class="px-6 py-4">Check-In</th>
+        <th class="px-6 py-4">Action</th>
+      </tr>
+    </thead>
+
+   <tbody class="divide-y divide-slate-100 text-sm">
+      {% for visitor in visitors_in %}
+
+      <tr class="group hover:bg-slate-50/80 transition-all duration-200">
+        <td class="px-6 py-5">
+            <div class="flex flex-col">
+                <span class="font-bold text-slate-800 text-base tracking-tight">{{ visitor.name }}</span>
+                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Guest</span>
+            </div>
+        </td>
+
+        <td class="px-6 py-5">
+          <span class="font-mono text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-100 uppercase">
+            {{ visitor.site|default:"—" }}
+          </span>
+        </td>
+
+        <td class="px-6 py-5">
+            <div class="flex items-center gap-2">
+                
+                <span class="text-slate-600 font-medium">{{ visitor.host.username }}</span>
+            </div>
+        </td>
+
+        <td class="px-6 py-5">
+          {% if visitor.last_induction_passed_at %}
+            <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-md text-[10px] font-bold uppercase ring-1 ring-inset ring-emerald-200">
+              {{ visitor.last_induction_passed_at|date:"Y-m-d H:i" }}
+            </span>
+          {% else %}
+            <span class="px-2.5 py-1 bg-slate-100 text-slate-500 rounded-md text-[10px] font-bold uppercase ring-1 ring-inset ring-slate-200 italic">
+              Never
+            </span>
+          {% endif %}
+        </td>
+
+        <td class="px-6 py-5 text-slate-500 font-mono text-xs">{{ visitor.check_in|date:"H:i" }}</td>
+
+        <td class="px-6 py-5 whitespace-nowrap">
+          <div class="flex items-center gap-3">
+            <button type="button"
+                class="text-slate-400 hover:text-slate-900 font-bold text-[11px] uppercase tracking-widest transition-colors cursor-pointer"
+                onclick="toggleDetails('{{ visitor.id }}')">
+                Details
+            </button>
+            <a href="{% url 'userauth:check_out' visitor.id %}"
+               class="px-4 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-bold text-[11px] uppercase tracking-widest hover:bg-rose-600 hover:text-white hover:border-rose-600 transition-all shadow-sm">
+               Check Out
+            </a>
+          </div>
+        </td>
+      </tr>
+<!-- Details Card -->
+      <tr id="details-{{ visitor.id }}" class="hidden">
+        <td colspan="8" class="px-6 py-4 bg-white">
+          <div class="bg-slate-900 rounded-2xl p-8 text-white shadow-2xl relative overflow-hidden animate_animated animate__slideInRight">
+            <div class="absolute top-0 right-0 p-8 opacity-5">
+                <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08s5.97 1.09 6 3.08c-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 relative z-10 ">
+              <div class="space-y-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-1 h-4 bg-emerald-500"></div>
+                    <p class="text-slate-500 uppercase text-[10px] font-black tracking-[0.2em]">Purpose of Entry</p>
+                </div>
+                <p class="text-slate-200 text-sm font-medium leading-relaxed italic">"{{ visitor.reason|default:"No description provided by the host." }}"</p>
+              </div>
+              <div class="space-y-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-1 h-4 bg-emerald-500"></div>
+                    <p class="text-slate-500 uppercase text-[10px] font-black tracking-[0.2em]">Company/Organization</p>
+                </div>
+                <p class="text-slate-200 text-sm font-medium leading-relaxed italic">"{{ visitor.company|default:"—" }}"</p>
+              </div>
+
+              <div class="space-y-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-1 h-4 bg-emerald-500"></div>
+                    <p class="text-slate-500 uppercase text-[10px] font-black tracking-[0.2em]">Live Status</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <p class="text-slate-200 font-bold text-sm flex items-center gap-2">
+                        Current State: <span class="text-emerald-400 capitalize">{{ visitor.status }}</span>
+                    </p>
+                    <p class="text-slate-400 text-xs">Email: {{ visitor.email|default:"N/A" }}</p>
+                </div>
+              </div>
+
+              <div class="space-y-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-1 h-4 bg-rose-500"></div>
+                    <p class="text-slate-500 uppercase text-[10px] font-black tracking-[0.2em]">Logistics Schedule</p>
+                </div>
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                    <p class="text-red-400 text-sm font-bold uppercase">PENDING EXIT                   
+                    </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+
+      {% empty %}
+      <tr>
+        <td colspan="8" class="px-6 py-20 text-center">
+            <div class="flex flex-col items-center">
+                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                </div>
+                <p class="text-slate-400 font-bold text-xs uppercase tracking-widest">No active visitors currently on-site</p>
+            </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+        </section>
+
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-6 border-b border-slate-100">
+                <h2 class="text-lg font-bold text-slate-800">Upcoming Appointments</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase text-[10px] font-black tracking-widest">
+                        <tr>
+                            <th class="px-6 py-4">Name</th>
+                            <th class="px-6 py-4">Visitor Code</th>
+                            <th class="px-6 py-4">Company</th>
+                            <th class="px-6 py-4">Site</th>
+                            <th class="px-6 py-4 text-center">Security Status</th>
+                            <th class="px-6 py-4">Appt. Time</th>
+                            
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-sm">
+                        {% for visitor in scheduled_visitors %}
+                        <tr class="hover:bg-slate-50/80 transition-colors">
+                            <td class="px-6 py-4 font-bold text-slate-800">{{ visitor.name }}</td>
+                            <td class="px-6 py-4 text-slate-600">{{ visitor.visitor_id }}</td>
+                            <td class="px-6 py-4 text-slate-500">{{ visitor.company }}</td>
+                            <td class="px-6 py-4 text-slate-500">{{ visitor.site }}</td>
+                            <td class="px-6 py-4 text-center">
+                                {% if visitor.status == "scheduled" %}
+                                    <span class="px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-[10px] font-bold border border-amber-200">Scheduled</span>
+                                {% elif visitor.status == "checked_in" %}
+                                    <span class="px-3 py-1 bg-green-50 text-green-700 rounded-full text-[10px] font-bold border border-green-200">Active</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 font-medium">{{ visitor.scheduled_date|date:"D, d M H:i" }}</td>
+                            <td class="px-6 py-4 text-center">
+                                {% if visitor.status == "checked_out" %}
+                                    <span class="text-emerald-500 font-bold">Clear ✓</span>
+                                {% else %}
+                                    <span class="text-rose-500 font-bold">Pending ⚠</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-12 text-center text-slate-400 font-medium">No appointments found for today.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>        
+
+    </main>
+</section>
+
+<script>
+  function generatePassID() {
+    const premise = document.querySelector('select[name="premise"]').value;
+    let prefix = 'OGL';
+    if (premise === 'whs') prefix = 'WHS';
+    else if (premise === 'ogl') prefix = 'OFF';
+    else if (premise === 'off') prefix = 'OGL';
+    const randomHex = Math.random().toString(16).substr(2, 5).toUpperCase();
+    document.getElementById('pass_id_input').value = `${prefix}-${randomHex}`;
+  }
+  
+   setTimeout(() => {
+    const notify = document.getElementById("notify");
+    if (notify) notify.style.display = "none";
+  }, 30000);
+   function toggleDetails(id) {
+    const row = document.getElementById(`details-${id}`);
+    if (!row) return;
+    row.classList.toggle("hidden");
+  } 
+</script>
+{% endblock %}

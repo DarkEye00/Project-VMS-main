@@ -1,0 +1,45 @@
+{% extends "pre.html" %}{% block content %}
+
+<section class="flex flex-col items-center w-full h-[100vh] text-gray-700 p-5">
+  <div class="w-auto h-auto bg-slate-100 rounded-lg">
+    <h3 class="text-center text-green-600 font-semibold text-xl p-2">
+      Enter the OTP sent to your email
+    </h3>
+    {% if messages %} {% for message in messages %}
+      <div
+        id="notify"
+        class="w-[90%] h-8 flex items-center my-2 ml-2 p-5 rounded-md bg-cyan-500/40 border-[1px] border-gray-700/40 {{message.tags}}"
+      >
+        {{message}}
+      </div>
+    {% endfor %} {% endif %}
+    <div class="p-5 flex justify-center">
+      <form class="flex flex-col space-y-3" method="post">
+        {% csrf_token %}
+        <input
+          type="text"
+          name="code"
+          maxlength="6"
+          placeholder="Enter OTP"
+          required
+          class="bg-gray-300/60 w-[250px] rounded-[7px] p-3 shadow-sm border border-gray-400"
+        />
+        <button
+          class="bg-green-600 w-32 p-2 rounded-lg cursor-pointer font-medium text-gray-100"
+          type="submit"
+        >
+          Verify
+        </button>
+      </form>
+    </div>
+  </div>
+</section>
+<script>
+  var myDiv = document.getElementById("notify");
+  if (myDiv) {
+    setTimeout(function () {
+      myDiv.style.display = "none";
+    }, 1000);
+  }
+</script>
+{% endblock %}

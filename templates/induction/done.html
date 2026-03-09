@@ -1,0 +1,43 @@
+{% extends "pre.html" %}
+{% block content %}
+
+<div class="min-h-screen bg-slate-50 flex flex-col items-center justify-center py-12 px-4 font-sans">
+    
+    <div class="bg-white shadow-2xl rounded-2xl border border-slate-200 w-full max-w-lg overflow-hidden text-center">
+        <div class="bg-emerald-600 py-12 flex flex-col items-center">
+            <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-black text-white uppercase tracking-tighter">Induction Passed</h1>
+            <p class="text-emerald-100 mt-1 font-medium">Safety Score: 100% (5/5)</p>
+        </div>
+
+        <div class="p-10">
+            <div class="mb-10">
+                <h3 class="text-slate-500 uppercase text-sm font-bold tracking-widest mb-4">What to do next</h3>
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-6 text-left">
+                    <ol class="space-y-4">
+                        <li class="flex items-start">
+                            <span class="w-6 h-6 bg-slate-800 text-white rounded-full text-xs flex items-center justify-center font-bold shrink-0 mt-0.5">1</span>
+                            <p class="ml-3 text-slate-700 font-medium leading-tight">Please collect your <span class="font-bold text-slate-900">Visitor Badge</span> from the Reception desk at the entrance.</p>
+                        </li>
+                        
+                    </ol>
+                </div>
+            </div>
+
+            <a href="{% url 'home' %}">
+                <button  class="w-full py-5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-all shadow-lg text-lg cursor-pointer">
+                Finish & Close
+            </button>
+            </a>
+            <p class="mt-6 text-slate-400 text-xs uppercase font-semibold">Session ID: #VMS-9942-X</p>
+        </div>
+    </div>
+</div>
+
+
+
+{% endblock %}

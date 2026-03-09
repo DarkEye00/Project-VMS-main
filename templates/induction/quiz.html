@@ -1,0 +1,186 @@
+{% extends "pre.html" %}
+{% block content %}
+<style>
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(40px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .animate-slide-in {
+    animation: slideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+</style>
+
+<div class="min-h-screen bg-slate-50 flex flex-col items-center py-12 px-4 font-sans text-slate-900">
+<!--
+{% if failed_before %}
+<div class="mb-6 w-full max-w-2xl bg-red-50 border border-red-200 rounded-xl p-5">
+  <p class="font-bold text-red-700">❌ You did not pass the induction quiz.</p>
+  <p class="text-red-600 mt-1">
+    Score: {{ last_score }}% • Attempt {{ attempts }} of {{ max_attempts }}
+  </p>
+  <p class="text-red-600 mt-1">Please try again. You do not need to rewatch the video.</p>
+</div>
+{% endif %} -->
+   {% if messages %}
+        {% for message in messages %}
+            <div id="notify" class="w-[90%] mx-auto my-2 p-4 rounded-md bg-cyan-500/40 border border-gray-300 {{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+<p class="text-xs text-slate-500">Questions loaded: {{ questions|length }}</p>
+
+  <div class="w-full max-w-2xl mb-8">
+    <div class="flex justify-between items-center mb-2">
+      <span class="text-sm font-semibold uppercase tracking-wider text-slate-500">
+        Step 2 of 3: Safety Assessment
+      </span>
+      <span id="progress-text" class="text-sm font-bold text-emerald-600">
+        Question 1 of {{ questions|length }}
+      </span>
+    </div>
+    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden shadow-inner">
+      <div id="progress-bar" class="bg-emerald-500 h-full w-[0%] transition-all duration-500 ease-out"></div>
+    </div>
+  </div>
+
+  <div class="bg-white shadow-2xl rounded-2xl border border-slate-200 w-full max-w-2xl overflow-hidden min-h-[520px] flex flex-col">
+
+    <form id="quizForm" method="post" class="flex flex-col flex-grow">
+      {% csrf_token %}
+
+      <!-- Hidden inputs that backend expects: q_<question_id> = <option_id> -->
+      <div id="hidden-answers">
+        {% for q in questions %}
+          <input type="hidden" name="q_{{ q.id }}" id="ans_q{{ q.id }}" value="">
+        {% endfor %}
+      </div>
+
+      <div id="question-container" class="p-10 flex-grow">
+        <div id="active-question-content" class="animate-slide-in">
+          <span id="q-category" class="text-emerald-600 font-bold text-xs tracking-[0.2em] uppercase">
+            Safety Induction
+          </span>
+
+          <h2 id="q-text" class="text-2xl font-bold text-slate-800 mt-3 mb-8 leading-snug"></h2>
+
+          <div id="options-grid" class="space-y-4"></div>
+        </div>
+      </div>
+
+      <div class="p-6 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <p id="error-msg" class="text-red-600 text-sm font-bold opacity-0 transition-opacity flex items-center">
+          <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"/>
+          </svg>
+          Please select an answer to proceed
+        </p>
+
+        <button type="button" onclick="handleNext()"
+                class="w-full sm:w-auto px-12 py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-all shadow-lg active:scale-95 uppercase tracking-wider text-sm">
+          Next
+        </button>
+
+        <button id="submitBtn" type="submit"
+                class="hidden w-full sm:w-auto px-12 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-lg active:scale-95 uppercase tracking-wider text-sm">
+          Submit Quiz
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+  // Build quizData from Django context (questions + options)
+  const quizData = [
+    {% for q in questions %}
+      {
+        id: {{ q.id }},
+        cat: "Safety Induction",
+        q: "{{ q.question_text|escapejs }}",
+        options: [
+          {% for opt in q.options.all %}
+            { id: {{ opt.id }}, text: "{{ opt.option_text|escapejs }}" },
+          {% endfor %}
+        ]
+      },
+    {% endfor %}
+  ];
+
+  let currentIndex = 0;
+
+  function renderQuestion() {
+    if (!quizData.length) {
+      document.getElementById('q-text').innerText = "No quiz questions available.";
+      return;
+    }
+
+    const data = quizData[currentIndex];
+    const container = document.getElementById('active-question-content');
+
+    container.classList.remove('animate-slide-in');
+    void container.offsetWidth;
+    container.classList.add('animate-slide-in');
+
+    document.getElementById('q-category').innerText = data.cat;
+    document.getElementById('q-text').innerText = data.q;
+
+    const total = quizData.length;
+    document.getElementById('progress-text').innerText = `Question ${currentIndex + 1} of ${total}`;
+    document.getElementById('progress-bar').style.width = (((currentIndex + 1) / total) * 100) + '%';
+
+    const optionsGrid = document.getElementById('options-grid');
+    const saved = document.getElementById(`ans_q${data.id}`).value;
+
+    optionsGrid.innerHTML = data.options.map((opt) => `
+      <label class="flex items-center p-5 border-2 border-slate-100 rounded-xl cursor-pointer hover:border-emerald-200 hover:bg-emerald-50/30 transition-all group">
+        <input type="radio" name="quiz-opt" value="${opt.id}"
+               class="w-6 h-6 text-emerald-600 border-slate-300 focus:ring-emerald-500"
+               ${saved && String(saved) === String(opt.id) ? "checked" : ""}>
+        <span class="ml-4 text-lg font-medium text-slate-700 group-hover:text-slate-900">${opt.text}</span>
+      </label>
+    `).join('');
+
+    const isLast = (currentIndex === quizData.length - 1);
+    document.querySelector('button[onclick="handleNext()"]').classList.toggle('hidden', isLast);
+    document.getElementById('submitBtn').classList.toggle('hidden', !isLast);
+  }
+
+  function handleNext() {
+    const selected = document.querySelector('input[name="quiz-opt"]:checked');
+    if (!selected) {
+      document.getElementById('error-msg').style.opacity = '1';
+      return;
+    }
+    document.getElementById('error-msg').style.opacity = '0';
+
+    const qid = quizData[currentIndex].id;
+    document.getElementById(`ans_q${qid}`).value = selected.value;
+
+    if (currentIndex < quizData.length - 1) {
+      currentIndex++;
+      renderQuestion();
+    }
+  }
+
+  document.getElementById("quizForm").addEventListener("submit", function(e) {
+    const selected = document.querySelector('input[name="quiz-opt"]:checked');
+    if (!selected) {
+      e.preventDefault();
+      document.getElementById('error-msg').style.opacity = '1';
+      return;
+    }
+    const qid = quizData[currentIndex].id;
+    document.getElementById(`ans_q${qid}`).value = selected.value;
+  });
+
+  renderQuestion();
+
+  setTimeout(() => {
+    const notify = document.getElementById("notify");
+    if (notify) notify.style.display = "none";
+  }, 5000);
+</script>
+
+
+{% endblock content %}

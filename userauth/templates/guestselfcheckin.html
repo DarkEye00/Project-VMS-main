@@ -1,0 +1,109 @@
+{% extends "pre.html" %}
+
+{% block content %}
+
+
+<body class="text-gray-800 bg-gray-200">
+   
+        <div class="bg-white p-6 rounded shadow mb-6 max-w-lg mx-auto">
+          {% if visitor %}
+            <!-- ✅ Confirmation View -->
+            <h2 class="text-xl font-semibold text-green-700 mb-4 text-center">Appointment Booked Successfully</h2>
+            <p class="mb-2"><strong>Name:</strong> {{ visitor.name }}</p>
+            <p class="mb-2"><strong>Email:</strong> {{ visitor.email }}</p>
+            <p class="mb-2"><strong>Host:</strong>
+  {{ visitor.host.get_full_name|default:visitor.host.username|default:visitor.host.email }}
+</p>
+            <p class="mb-2"><strong>Visit Date:</strong> {{ visitor.visit_date }}</p>
+            <p class="mb-2"><strong>pass ID:</strong> {{ visitor.visitor_id }}</p>
+            <div class="mt-4 text-center">
+              <a href="{% url 'home' %}" class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-800">Back to Home</a>
+            </div>
+
+            {% else %}
+            <!-- 📝 Form View -->
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 text-center">Guest Self Check-In / Appointment Booking</h2>
+            <form method="post" class="space-y-4">
+              {% csrf_token %}
+              <!-- Full Name -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <input type="text" name="name" required placeholder="Your Name"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+              </div>
+              <!-- Email -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" name="email" required placeholder="Your Email"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+              </div>
+              <!--company-->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Company/Organization</label>
+                <textarea name="company" required placeholder="Type N/A if not applicable"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-24"></textarea>
+              </div>
+              <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Location/Site</label>
+            <select name="site" id="site-select" required
+              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+              <option value="">-- Select Site --</option>
+              <option value="Katko Complex">Katko Complex, Nairobi</option>
+              <option value="SF Hayat">Sunflag Hayat, Nairobi</option>
+              <option value="SF Unilever">Sunflag UKL, Nairobi</option>
+              <option value="Mombasa Branch">Mombasa Site</option>
+              <option value="Tanzania Branch">Tanzania Site</option>
+              <option value="Uganda Branch">Uganda Site</option>
+
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Venue</label>
+            <select name="venue" id="venue-select" required
+              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+              <option value="">-- Select Venue --</option>
+              <option value="warehouse">Warehouse</option>
+              <option value="office">Office</option>
+              <option value="both">Warehouse and Office</option>
+            </select>
+          </div>
+              <!-- Reason -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Reason for Visit</label>
+                <textarea name="reason" required placeholder="Reason for visit"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-24"></textarea>
+              </div>
+              <!-- Appointment Date/Time -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Appointment Date & Time</label>
+                <input type="datetime-local" name="visit_date" required
+                  class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+              </div>
+              <!-- Host Selection -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Whom are you coming to visit? </label>
+                <select name="host" required
+                  class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                  <option value="">-- Select Host --</option>
+                  {% for host in hosts %}
+                    <option value="{{ host.id }}">{{ host.get_full_name|default:host.username }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <!-- Submit Button -->
+              <div>
+                <button type="submit" class="w-full px-6 py-2 bg-blue-600 text-white rounded hover:bg-gray-700 cursor-pointer">Book Appointment</button>
+              </div>
+            </form>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+<script>
+  setTimeout(() => {
+    const notify = document.getElementById("notify");
+    if (notify) notify.style.display = "none";
+  }, 2000);
+</script>
+{% endblock %}

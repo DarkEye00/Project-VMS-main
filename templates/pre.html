@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    {% load static %}
+   
+    <title>Visitor Management System</title>
+    <link rel="stylesheet" href="{% static 'output/output.css' %}">
+</head>
+
+<body class="text-gray-800 bg-gray-200">
+    <header class="bg-green-600 text-white">
+        <div class="container mx-auto flex justify-between items-center py-4 px-6">
+            <a href="{% url 'home' %}">
+                <img class="h-16 w-32" src="{% static 'images/JPEG LOGO.jpeg' %}" alt="OGL_LOGO">
+            </a>
+            <div>
+                <span class="text-sm">Welcome, {{ user.username }}</span>
+            </div>
+        </div>
+    </header>
+
+ <main class="flex w-full items-center justify-center">
+    {% block content %}
+    {% endblock %}
+</main>
+<script>
+  setTimeout(() => {
+    const notify = document.getElementById("notify");
+    if (notify) notify.style.display = "none";
+  }, 2000);
+</script>
+</body>
+
+</html>

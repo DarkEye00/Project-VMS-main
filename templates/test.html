@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body>
+   <style>
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(30px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    .animate-slide-in {
+        animation: slideIn 0.4s ease-out forwards;
+    }
+</style>
+
+<style>
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(40px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    .animate-slide-in {
+        animation: slideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+</style>
+
+<div class="min-h-screen bg-slate-50 flex flex-col items-center py-12 px-4 font-sans text-slate-900">
+    <div class="w-full max-w-2xl mb-8">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-sm font-semibold uppercase tracking-wider text-slate-500">Step 2 of 3: Safety Assessment</span>
+            <span id="progress-text" class="text-sm font-bold text-emerald-600">Question 1 of 9</span>
+        </div>
+        <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden shadow-inner">
+            <div id="progress-bar" class="bg-emerald-500 h-full w-[11%] transition-all duration-500 ease-out"></div>
+        </div>
+    </div>
+
+    <div class="bg-white shadow-2xl rounded-2xl border border-slate-200 w-full max-w-2xl overflow-hidden min-h-[520px] flex flex-col">
+        
+        <div id="question-container" class="p-10 flex-grow">
+            <div id="active-question-content" class="animate-slide-in">
+                <span id="q-category" class="text-emerald-600 font-bold text-xs tracking-[0.2em] uppercase">General Safety</span>
+                <h2 id="q-text" class="text-2xl font-bold text-slate-800 mt-3 mb-8 leading-snug">
+                    What are the first three safety behaviors you should follow when you arrive at the workplace?
+                </h2>
+
+                <div id="options-grid" class="space-y-4">
+                    </div>
+            </div>
+        </div>
+
+        <div class="p-6 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p id="error-msg" class="text-red-600 text-sm font-bold opacity-0 transition-opacity flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"/></svg>
+                Please select an answer to proceed
+            </p>
+            <button onclick="handleNext()" class="w-full sm:w-auto px-12 py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-all shadow-lg active:scale-95 uppercase tracking-wider text-sm">
+                Next Question
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const quizData = [
+        {
+            cat: "Initial Arrival",
+            q: "What are the first three safety behaviors you should follow when you arrive at the workplace?",
+            options: ["Check-in, wear ID, and read safety signs", "Enter through the loading bay", "Proceed directly to your meeting"]
+        },
+        {
+            cat: "Offshore Global Logistics",
+            q: "When you first arrive at Offshore Global Logistics, what is the first step you should take?",
+            options: ["Report to the main reception/security desk", "Walk directly to the warehouse floor", "Find a staff member in the parking lot"]
+        },
+        {
+            cat: "Warehouse Conduct",
+            q: "During the warehouse tour, what should visitors always do?",
+            options: ["Stay with their guide within designated walkways", "Feel free to explore side aisles", "Take photos of all equipment"]
+        },
+        {
+            cat: "Right of Way",
+            q: "Who has the right of way in and around the facility, especially near dispatch and receiving bays?",
+            options: ["Heavy machinery and forklifts", "Pedestrians and visitors", "Office staff"]
+        },
+        {
+            cat: "Emergency Response",
+            q: "In case of a fire emergency, what is the correct action for visitors?",
+            options: ["Evacuate immediately via the nearest exit to the muster point", "Wait for your host to find you", "Try to locate your personal belongings first"]
+        },
+        {
+            cat: "Communication",
+            q: "How can visitors provide feedback about safety or concerns in the facility?",
+            options: ["Report to the Site Safety Officer or Reception", "Post it on social media", "Wait until they get home to email"]
+        },
+        {
+            cat: "Prohibited Acts",
+            q: "Which activities are prohibited in the warehouse?",
+            options: ["Smoking, running, and unauthorized photography", "Wearing high-visibility vests", "Walking on green-marked paths"]
+        },
+        {
+            cat: "Safe Movement",
+            q: "Where should visitors walk inside the warehouse to ensure safety?",
+            options: ["In clearly marked pedestrian green walkways", "Anywhere that looks clear of forklifts", "Along the center of the driving lanes"]
+        },
+        {
+            cat: "Fall Prevention",
+            q: "When climbing stairs in the facility, what is the safest practice?",
+            options: ["Always maintain three points of contact (use handrails)", "Move as quickly as possible to clear the way", "Carry large items in both hands"]
+        }
+    ];
+
+    let currentIndex = 0;
+
+    function renderQuestion() {
+        const data = quizData[currentIndex];
+        const container = document.getElementById('active-question-content');
+        
+        // Trigger animation
+        container.classList.remove('animate-slide-in');
+        void container.offsetWidth; // Force reflow
+        container.classList.add('animate-slide-in');
+
+        document.getElementById('q-category').innerText = data.cat;
+        document.getElementById('q-text').innerText = data.q;
+        document.getElementById('progress-text').innerText = `Question ${currentIndex + 1} of ${quizData.length}`;
+        document.getElementById('progress-bar').style.width = ((currentIndex + 1) / quizData.length * 100) + '%';
+
+        const optionsGrid = document.getElementById('options-grid');
+        optionsGrid.innerHTML = data.options.map((opt, i) => `
+            <label class="flex items-center p-5 border-2 border-slate-100 rounded-xl cursor-pointer hover:border-emerald-200 hover:bg-emerald-50/30 transition-all group">
+                <input type="radio" name="quiz-opt" value="${i}" class="w-6 h-6 text-emerald-600 border-slate-300 focus:ring-emerald-500">
+                <span class="ml-4 text-lg font-medium text-slate-700 group-hover:text-slate-900">${opt}</span>
+            </label>
+        `).join('');
+    }
+
+    function handleNext() {
+        const selected = document.querySelector('input[name="quiz-opt"]:checked');
+        if (!selected) {
+            document.getElementById('error-msg').style.opacity = '1';
+            return;
+        }
+
+        document.getElementById('error-msg').style.opacity = '0';
+        
+        if (currentIndex < quizData.length - 1) {
+            currentIndex++;
+            renderQuestion();
+        } else {
+            // Logic for pass/fail would be here
+            alert("Quiz Completed. Redirecting to results...");
+        }
+    }
+
+    // Initial Load
+    renderQuestion();
+</script>
+</html>
