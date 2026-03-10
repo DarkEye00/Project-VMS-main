@@ -110,3 +110,7 @@ def locked(request, pass_id):
         "max_attempts": MAX_ATTEMPTS,
         "host": visitor.host,
     })
+
+
+    #tomorrow: test the facial recognition flow end to end, then add the induction quiz as a final step before granting access
+    #and also the check if the staff_fac is working

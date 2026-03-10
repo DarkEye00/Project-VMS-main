@@ -6,6 +6,7 @@ from userauth.views import CustomPasswordChangeView  # Import the missing view
 from django.contrib.auth.views import LogoutView  
 from userauth.views import home
 from django.urls import reverse_lazy
+from userauth.face_views import enroll_face, verify_face, override_face
 
 app_name = 'userauth'
 
@@ -32,6 +33,8 @@ urlpatterns = [
     path('visitors-overview/', views.visitors_overview, name='visitors_history'),
     #path('pre-register/', views.pre_register_success, name='pre-register'),
     path('guestconfirm/', views.guest_confirm, name='guestconfirm'),
+
+    # ---password reset urls---
     path(
         'password_reset/',
         auth_views.PasswordResetView.as_view(
@@ -62,4 +65,9 @@ urlpatterns = [
         ),
         name='password_reset_complete'
     ),
+#--Face recognition endpoints ───────────────────────────────────────────────
+    
+    path('staff/face/enroll/',   enroll_face,   name='face_enroll'),
+    path('staff/face/verify/',   verify_face,   name='face_verify'),
+    path('staff/face/override/', override_face, name='face_override'),  
 ]

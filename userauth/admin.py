@@ -1,6 +1,7 @@
 from django.contrib import admin
 from userauth.models import User, Visitor, EmailOTP, Notification
 from .models import StaffCheckInOut  # PreBooking removed
+from .face_models import StaffFaceProfile, FaceVerificationLog
 
 # Custom User Admin
 @admin.register(User)
@@ -40,3 +41,21 @@ class StaffCheckInOutAdmin(admin.ModelAdmin):
     search_fields = ['name', 'id_no', 'department']
     list_filter = ['department']
     readonly_fields = ['time_in', 'time_out']
+
+
+@admin.register(StaffFaceProfile)
+class StaffFaceProfileAdmin(admin.ModelAdmin):
+    list_display   = ["staff", "enrolled_at", "updated_at"]
+    search_fields  = ["staff__name", "staff__id_no"]
+    readonly_fields= ["enrolled_at", "updated_at"]
+
+
+@admin.register(FaceVerificationLog)
+class FaceVerificationLogAdmin(admin.ModelAdmin):
+    list_display   = ["staff_id_no", "outcome", "confidence_score", "attempt_time", "override_by"]
+    list_filter    = ["outcome", "attempt_time"]
+    search_fields  = ["staff_id_no", "staff__name"]
+    readonly_fields= [
+        "staff", "staff_id_no", "attempt_time", "confidence_score",
+        "outcome", "ip_address", "override_by", "override_reason",
+    ]

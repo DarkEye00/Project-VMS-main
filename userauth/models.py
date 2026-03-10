@@ -142,3 +142,5 @@ class StaffCheckInOut(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.department}"
+
+from .face_models import StaffFaceProfile, FaceVerificationLog

@@ -39,6 +39,9 @@ from django.core.exceptions import PermissionDenied
 from induction.services.flow import ensure_induction, assert_can_security_check_in
 from induction.services.security_override import reset_induction_for_visitor
 from induction.models import InductionProfile
+import json as _json
+from .face_models import StaffFaceProfile, FaceVerificationLog
+from .services.face_service import validate_encoding
 
 def home(request):
     return render(request, "home.html")
@@ -568,16 +571,48 @@ def security_profile(request):
 
     return render(request, 'profile.html', context)
 
+
 @login_required
 def staff_check_in(request):
     if request.method == 'POST':
         form = StaffCheckInOutForm(request.POST)
         if form.is_valid():
-            form.save()
+            staff = form.save()  # StaffCheckInOut now has a PK
+
+            # ── Save face encoding submitted via hidden form field ─────────────
+            raw_encoding = request.POST.get("face_encoding", "").strip()
+            face_verdict  = request.POST.get("face_verdict", "").strip()
+
+            if raw_encoding and face_verdict:
+                try:
+                    encoding = _json.loads(raw_encoding)
+                    ok, _    = validate_encoding(encoding)
+                    if ok:
+                        StaffFaceProfile.objects.update_or_create(
+                            staff=staff,
+                            defaults={"face_encoding": encoding},
+                        )
+                        outcome_map = {
+                            "enroll":   FaceVerificationLog.Outcome.ENROLLED,
+                            "matched":  FaceVerificationLog.Outcome.MATCHED,
+                            "warned":   FaceVerificationLog.Outcome.WARNED,
+                            "blocked":  FaceVerificationLog.Outcome.BLOCKED,
+                            "override": FaceVerificationLog.Outcome.OVERRIDE,
+                        }
+                        FaceVerificationLog.objects.create(
+                            staff=staff,
+                            staff_id_no=staff.id_no,
+                            outcome=outcome_map.get(face_verdict, FaceVerificationLog.Outcome.ENROLLED),
+                        )
+                except (ValueError, TypeError):
+                    pass  # Malformed encoding — skip, check-in still proceeds
+
+            messages.success(request, f"{staff.name} checked in successfully.")
             return redirect('userauth:staff_logs')
     else:
         form = StaffCheckInOutForm()
     return render(request, 'staff.html', {'form': form})
+
 
 @login_required
 def staff_check_out(request, staff_id):
