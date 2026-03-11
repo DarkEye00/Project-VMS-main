@@ -6,7 +6,7 @@ from userauth.views import CustomPasswordChangeView  # Import the missing view
 from django.contrib.auth.views import LogoutView  
 from userauth.views import home
 from django.urls import reverse_lazy
-from userauth.face_views import enroll_face, verify_face, override_face
+from userauth.face_views import enroll_face, face_search, verify_face, override_face
 
 app_name = 'userauth'
 
@@ -67,7 +67,12 @@ urlpatterns = [
     ),
 #--Face recognition endpoints ───────────────────────────────────────────────
     
-    path('staff/face/enroll/',   enroll_face,   name='face_enroll'),
-    path('staff/face/verify/',   verify_face,   name='face_verify'),
-    path('staff/face/override/', override_face, name='face_override'),  
+    # face_search : face-first identification (no id_no needed for return visits)
+    path("staff/face/search/",   face_search,   name="face_search"),
+    # enroll_face : first-time enrolment (id_no required)
+    path("staff/face/enroll/",   enroll_face,   name="face_enroll"),
+    # verify_face : id_no-based verify (fallback / manual ID path)
+    path("staff/face/verify/",   verify_face,   name="face_verify"),
+    # override_face : security officer override logging
+    path("staff/face/override/", override_face, name="face_override"),
 ]

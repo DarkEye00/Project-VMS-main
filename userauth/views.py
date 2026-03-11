@@ -571,22 +571,50 @@ def security_profile(request):
 
     return render(request, 'profile.html', context)
 
-
 @login_required
 def staff_check_in(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         form = StaffCheckInOutForm(request.POST)
-        if form.is_valid():
-            staff = form.save()  # StaffCheckInOut now has a PK
 
-            # ── Save face encoding submitted via hidden form field ─────────────
+        if form.is_valid():
+            id_no = form.cleaned_data.get("id_no", "").strip()
+
+            # ── Duplicate check-in guard ──────────────────────────────────────
+            # A staff member is "currently inside" if there is any row with
+            # their id_no where time_out is still None (not yet checked out).
+            if id_no:
+                active_session = (
+                    StaffCheckInOut.objects
+                    .filter(id_no=id_no, time_out__isnull=True)
+                    .order_by("-time_in")
+                    .first()
+                )
+                if active_session:
+                    # Reject — do NOT call form.save()
+                    time_in_fmt = (
+                        active_session.time_in.strftime("%d %b %Y, %I:%M %p")
+                        if active_session.time_in else "unknown time"
+                    )
+                    messages.error(
+                        request,
+                        f"⚠ {active_session.name} (ID: {id_no}) is already checked in "
+                        f"since {time_in_fmt} and has not yet checked out. "
+                        f"Please check them out before checking in again."
+                    )
+                    # Re-render with form data intact so security doesn't lose input
+                    return render(request, "staff.html", {"form": form})
+
+            # ── No active session — safe to proceed ───────────────────────────
+            staff = form.save()
+
+            # ── Handle face encoding from hidden field ────────────────────────
             raw_encoding = request.POST.get("face_encoding", "").strip()
-            face_verdict  = request.POST.get("face_verdict", "").strip()
+            face_verdict = request.POST.get("face_verdict", "").strip()
 
             if raw_encoding and face_verdict:
                 try:
                     encoding = _json.loads(raw_encoding)
-                    ok, _    = validate_encoding(encoding)
+                    ok, msg = validate_encoding(encoding)
                     if ok:
                         StaffFaceProfile.objects.update_or_create(
                             staff=staff,
@@ -605,13 +633,15 @@ def staff_check_in(request):
                             outcome=outcome_map.get(face_verdict, FaceVerificationLog.Outcome.ENROLLED),
                         )
                 except (ValueError, TypeError):
-                    pass  # Malformed encoding — skip, check-in still proceeds
+                    pass  # Bad JSON — skip silently, check-in still proceeds
 
             messages.success(request, f"{staff.name} checked in successfully.")
-            return redirect('userauth:staff_logs')
+            return redirect("userauth:staff_logs")
+
     else:
         form = StaffCheckInOutForm()
-    return render(request, 'staff.html', {'form': form})
+
+    return render(request, "staff.html", {"form": form})
 
 
 @login_required

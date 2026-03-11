@@ -4,6 +4,7 @@
   <main class="flex-1 p-4 sm:p-6 md:p-8">
     <section class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-2xl mx-auto overflow-hidden">
 
+      <!-- Header -->
       <div class="bg-slate-900 px-6 py-5 border-b-4 border-emerald-500">
         <div class="flex items-center justify-between">
           <div>
@@ -15,431 +16,911 @@
           </div>
           <div class="p-2 bg-slate-800 rounded-lg">
             <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
             </svg>
           </div>
         </div>
       </div>
 
       <div class="p-6 md:p-10">
+
         {% if messages %}
           {% for message in messages %}
-            <div class="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-3">
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
-              </svg>
-              <span class="text-xs font-bold uppercase">{{ message }}</span>
-            </div>
+            {% if message.tags == 'error' %}
+              <!-- ── ERROR banner (e.g. duplicate check-in) ── -->
+              <div class="mb-6 p-4 rounded-xl bg-red-50 border-2 border-red-300 text-red-800 flex items-start gap-3">
+                <svg class="w-5 h-5 flex-shrink-0 mt-0.5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clip-rule="evenodd"/>
+                </svg>
+                <div>
+                  <p class="text-xs font-black uppercase tracking-wide mb-1">Check-In Blocked</p>
+                  <p class="text-sm font-medium">{{ message }}</p>
+                </div>
+              </div>
+            {% elif message.tags == 'warning' %}
+              <!-- ── WARNING banner ── -->
+              <div class="mb-6 p-4 rounded-xl bg-amber-50 border-2 border-amber-300 text-amber-800 flex items-start gap-3">
+                <svg class="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clip-rule="evenodd"/>
+                </svg>
+                <p class="text-sm font-medium">{{ message }}</p>
+              </div>
+            {% else %}
+              <!-- ── SUCCESS banner (default) ── -->
+              <div class="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-3">
+                <svg class="w-5 h-5 flex-shrink-0 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                </svg>
+                <span class="text-sm font-medium">{{ message }}</span>
+              </div>
+            {% endif %}
           {% endfor %}
         {% endif %}
 
+        <!-- ══════════════════════════════════════════════════════
+             STEP 1 — FIRST TIME OR RETURNING?
+             This panel is shown first before anything else.
+        ══════════════════════════════════════════════════════ -->
+        <div id="step-select-panel" class="mb-6">
+          <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 text-center">
+            Is this staff member checking in for the first time?
+          </p>
+          <div class="flex gap-4">
+            <button type="button" id="btn-first-time"
+              class="flex-1 py-4 bg-blue-600 text-white text-[11px] font-black rounded-xl
+                     uppercase tracking-widest hover:bg-blue-700 transition-all cursor-pointer
+                     flex flex-col items-center justify-center gap-2 border-b-4 border-blue-800
+                     active:border-b-0 active:translate-y-1">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+              </svg>
+              <span>First Time</span>
+              <span class="text-[9px] font-normal normal-case tracking-normal opacity-80">Enrol face + check in</span>
+            </button>
+            <button type="button" id="btn-returning"
+              class="flex-1 py-4 bg-emerald-600 text-white text-[11px] font-black rounded-xl
+                     uppercase tracking-widest hover:bg-emerald-700 transition-all cursor-pointer
+                     flex flex-col items-center justify-center gap-2 border-b-4 border-emerald-800
+                     active:border-b-0 active:translate-y-1">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+              </svg>
+              <span>Returning Staff</span>
+              <span class="text-[9px] font-normal normal-case tracking-normal opacity-80">Scan face to auto-fill</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════
+             BIOMETRIC PANEL
+             Shown after the user picks a mode above.
+        ══════════════════════════════════════════════════════ -->
+        <div id="face-panel" class="hidden mb-6 border-2 border-slate-100 rounded-2xl overflow-hidden">
+
+          <!-- Panel header -->
+          <div class="bg-slate-50 px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+              </svg>
+              <span id="face-panel-label" class="text-[10px] font-black text-slate-600 uppercase tracking-widest">Face ID</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span id="face-status-badge"
+                class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-slate-200 text-slate-500">
+                STANDBY
+              </span>
+              <!-- Back button -->
+              <button type="button" id="backBtn"
+                class="text-[9px] font-black text-slate-400 uppercase tracking-widest
+                       hover:text-slate-600 transition-all cursor-pointer underline underline-offset-2">
+                ← Change
+              </button>
+            </div>
+          </div>
+
+          <div class="p-5">
+
+            <!-- ENROL MODE: ID entry prompt (shown only in enrol mode) -->
+            <div id="enrol-id-prompt" class="hidden mb-4 p-3 rounded-xl bg-blue-50 border border-blue-200">
+              <p class="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-2">Step 1 of 2 — Enter Staff ID</p>
+              <p class="text-xs text-blue-700 mb-3">
+                Enter the staff member's ID number, then start the camera to capture their face.
+              </p>
+              <div class="flex gap-2">
+                <input type="text" id="enrol-id-field" placeholder="Staff ID Number"
+                  class="flex-1 px-3 py-2 border-2 border-blue-200 rounded-lg bg-white text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 uppercase"/>
+                <button type="button" id="enrol-id-confirm"
+                  class="px-4 py-2 bg-blue-600 text-white text-xs font-black rounded-lg
+                         uppercase hover:bg-blue-700 transition-all cursor-pointer">
+                  Confirm
+                </button>
+              </div>
+              <p id="enrol-id-error" class="hidden text-rose-600 text-[10px] font-bold mt-2 uppercase"></p>
+            </div>
+
+            <!-- ENROL MODE: face capture prompt (shown after ID confirmed) -->
+            <div id="enrol-camera-prompt" class="hidden mb-4 p-3 rounded-xl bg-blue-50 border border-blue-200">
+              <p class="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">Step 2 of 2 — Capture Face</p>
+              <p class="text-xs text-blue-700">
+                ID: <strong id="enrol-id-display" class="font-black"></strong> — Start camera and capture face to enrol.
+              </p>
+            </div>
+
+            <!-- Model loading progress -->
+            <div id="model-loading-panel" class="mb-4 hidden">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Loading biometric models</span>
+                <span id="model-pct" class="text-[10px] font-black text-blue-600">0%</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div id="model-bar" class="h-full rounded-full bg-blue-500 transition-all duration-500" style="width:0%"></div>
+              </div>
+              <p id="model-step" class="text-[9px] text-slate-400 mt-1 italic">Initialising…</p>
+            </div>
+
+            <!-- Detection progress -->
+            <div id="detect-panel" class="mb-4 hidden">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Analysing face</span>
+                <span id="detect-pct" class="text-[10px] font-black text-emerald-600">0%</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div id="detect-bar" class="h-full rounded-full bg-emerald-500 transition-all duration-300" style="width:0%"></div>
+              </div>
+              <p id="detect-step" class="text-[9px] text-slate-400 mt-1 italic">Preparing…</p>
+            </div>
+
+            <!-- Video feed -->
+            <div class="relative rounded-xl overflow-hidden bg-slate-900 aspect-video mb-4 flex items-center justify-center">
+              <video id="videoEl" autoplay muted playsinline class="w-full h-full object-cover"></video>
+              <canvas id="overlayCanvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+              <div id="camera-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
+                <svg class="w-12 h-12 mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+                </svg>
+                <p class="text-[10px] font-bold uppercase tracking-widest opacity-50">Camera inactive</p>
+              </div>
+            </div>
+
+            <!-- Status box -->
+            <div id="face-status-box" class="hidden mb-4 p-3 rounded-lg border text-center">
+              <p id="face-status-text" class="text-xs font-bold"></p>
+            </div>
+
+            <!-- Confidence meter (returning mode only) -->
+            <div id="confidence-meter" class="hidden mb-4">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-[10px] font-black text-slate-500 uppercase">Match Confidence</span>
+                <span id="confidence-value" class="text-sm font-black text-emerald-600">0%</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                <div id="confidence-bar" class="h-full rounded-full transition-all duration-700 bg-emerald-500" style="width:0%"></div>
+              </div>
+            </div>
+
+            <!-- Override panel (returning mode — warn verdict) -->
+            <div id="override-panel" class="hidden mb-4 p-4 rounded-xl border-2 border-amber-200 bg-amber-50">
+              <p class="text-xs font-black text-amber-800 uppercase mb-2">Security Override Required</p>
+              <p id="override-message" class="text-xs text-amber-700 mb-3"></p>
+              <textarea id="override-reason" rows="2" placeholder="Enter reason for override…"
+                class="w-full px-3 py-2 border border-amber-300 rounded-lg bg-white text-sm
+                       focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"></textarea>
+              <button type="button" id="override-btn"
+                class="mt-2 px-4 py-2 bg-amber-600 text-white text-xs font-black rounded-lg
+                       uppercase hover:bg-amber-700 transition-all cursor-pointer">
+                Log Override &amp; Proceed
+              </button>
+            </div>
+
+            <!-- Camera controls -->
+            <div class="flex flex-wrap gap-3">
+              <button type="button" id="startCameraBtn"
+                class="flex-1 py-2.5 bg-slate-800 text-white text-[11px] font-black rounded-xl
+                       uppercase tracking-widest hover:bg-slate-600 transition-all cursor-pointer
+                       flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+                </svg>
+                <span id="startBtnLabel">Start Camera</span>
+              </button>
+
+              <button type="button" id="captureFaceBtn" disabled
+                class="flex-1 py-2.5 bg-emerald-600 text-white text-[11px] font-black rounded-xl
+                       uppercase tracking-widest hover:bg-emerald-700 transition-all cursor-pointer
+                       disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                <svg id="captureIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <svg id="captureSpinner" class="w-4 h-4 animate-spin hidden" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                <span id="captureBtnLabel">Capture Face</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════
+             CHECK-IN FORM — always rendered, fields visible
+             after face capture (enrol) or after match (returning)
+        ══════════════════════════════════════════════════════ -->
         <form id="staffForm" method="post" class="space-y-6">
           {% csrf_token %}
+
           {% for field in form %}
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{{ field.label }}</label>
-              <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-3 [&_input]:bg-slate-50 [&_input]:border-2 [&_input]:border-slate-100 [&_input]:rounded-xl [&_input]:outline-none [&_input]:transition-all [&_input]:focus:border-emerald-500 [&_input]:focus:bg-white">
+            <div class="flex flex-col gap-1.5" id="field-wrap-{{ field.html_name }}">
+              <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                {{ field.label }}
+              </label>
+              <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-3 [&_input]:bg-slate-50
+                          [&_input]:border-2 [&_input]:border-slate-100 [&_input]:rounded-xl
+                          [&_input]:outline-none [&_input]:transition-all
+                          [&_input]:focus:border-emerald-500 [&_input]:focus:bg-white
+                          [&_input.autofilled]:bg-emerald-50 [&_input.autofilled]:border-emerald-300">
                 {{ field }}
               </div>
               {% if field.errors %}
-                <p class="text-rose-600 text-[10px] font-bold mt-1 uppercase italic">{{ field.errors|striptags }}</p>
+                <p class="text-rose-600 text-[10px] font-bold mt-1 uppercase italic">
+                  {{ field.errors|striptags }}
+                </p>
               {% endif %}
             </div>
           {% endfor %}
 
-          <!-- ═══════════════════════════════════════════════
-               BIOMETRIC CAPTURE PANEL
-          ═══════════════════════════════════════════════ -->
-          <div class="mt-6 border-2 border-slate-100 rounded-2xl overflow-hidden">
-            <div class="bg-slate-50 px-5 py-3 border-b border-slate-100 flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
-                </svg>
-                <span class="text-[10px] font-black text-slate-600 uppercase tracking-widest">Biometric Verification</span>
-              </div>
-              <span id="face-status-badge" class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-slate-200 text-slate-500">STANDBY</span>
-            </div>
-
-            <div class="p-5">
-              <!-- Video feed -->
-              <div class="relative rounded-xl overflow-hidden bg-slate-900 aspect-video mb-4 flex items-center justify-center">
-                <video id="videoEl" autoplay muted playsinline class="w-full h-full object-cover"></video>
-                <canvas id="overlayCanvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
-                <div id="camera-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
-                  <svg class="w-12 h-12 mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
-                  </svg>
-                  <p class="text-[10px] font-bold uppercase tracking-widest opacity-50">Camera inactive</p>
-                </div>
-              </div>
-
-              <!-- Status text -->
-              <div id="face-detection-status" class="hidden mb-4 p-3 rounded-lg border text-center bg-slate-50 border-slate-100">
-                <p id="face-status-text" class="text-xs font-bold text-slate-600"></p>
-              </div>
-
-              <!-- Confidence meter -->
-              <div id="confidence-meter" class="hidden mb-4">
-                <div class="flex justify-between items-center mb-1">
-                  <span class="text-[10px] font-black text-slate-500 uppercase">Match Confidence</span>
-                  <span id="confidence-value" class="text-sm font-black text-emerald-600">0%</span>
-                </div>
-                <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                  <div id="confidence-bar" class="h-full rounded-full transition-all duration-700 bg-emerald-500" style="width:0%"></div>
-                </div>
-              </div>
-
-              <!-- Override panel -->
-              <div id="override-panel" class="hidden mb-4 p-4 rounded-xl border-2 border-amber-200 bg-amber-50">
-                <p class="text-xs font-black text-amber-800 uppercase mb-2">Security Override Required</p>
-                <p id="override-message" class="text-xs text-amber-700 mb-3"></p>
-                <textarea id="override-reason" rows="2" placeholder="Enter reason for override..."
-                  class="w-full px-3 py-2 border border-amber-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"></textarea>
-                <button type="button" id="override-btn"
-                  class="mt-2 px-4 py-2 bg-amber-600 text-white text-xs font-black rounded-lg uppercase hover:bg-amber-700 transition-all cursor-pointer">
-                  Log Override &amp; Proceed
-                </button>
-              </div>
-
-              <!-- Camera controls -->
-              <div class="flex flex-wrap gap-3">
-                <button type="button" id="startCameraBtn"
-                  class="flex-1 py-2.5 bg-slate-800 text-white text-[11px] font-black rounded-xl uppercase tracking-widest hover:bg-slate-600 transition-all cursor-pointer flex items-center justify-center gap-2">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
-                  </svg>
-                  Start Camera
-                </button>
-                <button type="button" id="captureFaceBtn" disabled
-                  class="flex-1 py-2.5 bg-emerald-600 text-white text-[11px] font-black rounded-xl uppercase tracking-widest hover:bg-emerald-700 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                  </svg>
-                  Capture &amp; Verify
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Hidden fields carrying face data through the form POST -->
+          <!-- Hidden face fields — populated by JS before submit -->
           <input type="hidden" id="face-encoding-input" name="face_encoding" value="">
           <input type="hidden" id="face-verdict-input"  name="face_verdict"  value="">
 
-          <div class="flex flex-col sm:flex-row justify-between gap-4 pt-6 px-4">
-            <button type="submit" id="submitBtn"
-              class="flex-1 p-2 bg-emerald-600 text-white text-[11px] font-black rounded-xl uppercase tracking-[0.2em] hover:bg-emerald-700 transition-all border-b-4 border-emerald-800 active:border-b-0 active:translate-y-1 block cursor-pointer">
+          <div class="flex flex-col sm:flex-row justify-between gap-4 pt-4">
+            <button type="submit" id="submitBtn" disabled
+              class="flex-1 p-3 bg-emerald-600 text-white text-[11px] font-black rounded-xl
+                     uppercase tracking-[0.2em] hover:bg-emerald-700 transition-all border-b-4
+                     border-emerald-800 active:border-b-0 active:translate-y-1 cursor-pointer
+                     disabled:opacity-40 disabled:cursor-not-allowed">
               Authorize Entry
             </button>
             <a href="{% url 'userauth:staff_logs' %}"
-              class="flex-1 p-2 bg-white border-2 border-slate-200 text-slate-500 text-[11px] font-black rounded-xl uppercase hover:bg-emerald-600 hover:text-slate-800 transition-all text-center">
+              class="flex-1 p-3 bg-white border-2 border-slate-200 text-slate-500 text-[11px]
+                     font-black rounded-xl uppercase hover:bg-slate-100 transition-all text-center">
               Staff Logs
             </a>
           </div>
         </form>
+
       </div>
 
       <div class="bg-slate-50 px-8 py-4 border-t border-slate-100 text-center">
         <p class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
-          Authorized Personnel Only — Face encoding processed on-device only
+          Authorized Personnel Only — Face data processed on-device only
         </p>
       </div>
     </section>
   </main>
 </section>
 
-<!-- face-api.js from CDN -->
+<!-- face-api.js CDN -->
 <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 {% load static %}
 <script>
-// ─── Config ───────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════════════════════════════════════
 const MODEL_URL    = "{% static 'models' %}";
-const VERIFY_URL   = "{% url 'userauth:face_verify' %}";
+const SEARCH_URL   = "{% url 'userauth:face_search' %}";
+const ENROLL_URL   = "{% url 'userauth:face_enroll' %}";
 const OVERRIDE_URL = "{% url 'userauth:face_override' %}";
 const CSRF_TOKEN   = "{{ csrf_token }}";
 
-// ─── State ────────────────────────────────────────────────────────────────────
+// SSD MobileNet = more accurate, handles variable warehouse lighting well.
+// Set false to fall back to TinyFaceDetector (faster, less accurate).
+const USE_SSD           = true;
+const DETECT_TIMEOUT_MS = 12000;
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════════════════════
 let stream           = null;
 let modelsLoaded     = false;
+let modelsLoading    = false;
 let capturedEncoding = null;
 let lastLogId        = null;
+let detectTimer      = null;
 
-// ─── DOM refs ─────────────────────────────────────────────────────────────────
-const videoEl       = document.getElementById("videoEl");
-const overlayCanvas = document.getElementById("overlayCanvas");
-const placeholder   = document.getElementById("camera-placeholder");
-const startBtn      = document.getElementById("startCameraBtn");
-const captureBtn    = document.getElementById("captureFaceBtn");
-const submitBtn     = document.getElementById("submitBtn");
-const statusBadge   = document.getElementById("face-status-badge");
-const statusBox     = document.getElementById("face-detection-status");
-const statusText    = document.getElementById("face-status-text");
-const confMeter     = document.getElementById("confidence-meter");
-const confValue     = document.getElementById("confidence-value");
-const confBar       = document.getElementById("confidence-bar");
-const overridePanel = document.getElementById("override-panel");
-const overrideMsg   = document.getElementById("override-message");
-const overrideBtn   = document.getElementById("override-btn");
-const overrideInput = document.getElementById("override-reason");
-const encodingInput = document.getElementById("face-encoding-input");
-const verdictInput  = document.getElementById("face-verdict-input");
+// "enrol" = first-time path | "returning" = face-search path
+let currentMode = null;
 
-// ─── UI helpers ───────────────────────────────────────────────────────────────
-const badgeClasses = {
+// The ID entered by security in enrol mode — confirmed before camera opens
+let enrolIdNo   = null;
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DOM REFS
+// ══════════════════════════════════════════════════════════════════════════════
+const stepSelectPanel   = document.getElementById("step-select-panel");
+const facePanel         = document.getElementById("face-panel");
+const facePanelLabel    = document.getElementById("face-panel-label");
+const btnFirstTime      = document.getElementById("btn-first-time");
+const btnReturning      = document.getElementById("btn-returning");
+const backBtn           = document.getElementById("backBtn");
+
+const enrolIdPrompt     = document.getElementById("enrol-id-prompt");
+const enrolCameraPrompt = document.getElementById("enrol-camera-prompt");
+const enrolIdField      = document.getElementById("enrol-id-field");
+const enrolIdConfirm    = document.getElementById("enrol-id-confirm");
+const enrolIdError      = document.getElementById("enrol-id-error");
+const enrolIdDisplay    = document.getElementById("enrol-id-display");
+
+const videoEl           = document.getElementById("videoEl");
+const overlayCanvas     = document.getElementById("overlayCanvas");
+const placeholder       = document.getElementById("camera-placeholder");
+const startBtn          = document.getElementById("startCameraBtn");
+const startBtnLabel     = document.getElementById("startBtnLabel");
+const captureBtn        = document.getElementById("captureFaceBtn");
+const captureBtnLbl     = document.getElementById("captureBtnLabel");
+const captureIcon       = document.getElementById("captureIcon");
+const captureSpinner    = document.getElementById("captureSpinner");
+const submitBtn         = document.getElementById("submitBtn");
+
+const statusBadge       = document.getElementById("face-status-badge");
+const statusBox         = document.getElementById("face-status-box");
+const statusText        = document.getElementById("face-status-text");
+const confMeter         = document.getElementById("confidence-meter");
+const confValue         = document.getElementById("confidence-value");
+const confBar           = document.getElementById("confidence-bar");
+const overridePanel     = document.getElementById("override-panel");
+const overrideMsg       = document.getElementById("override-message");
+const overrideBtn       = document.getElementById("override-btn");
+const overrideInput     = document.getElementById("override-reason");
+const encodingInput     = document.getElementById("face-encoding-input");
+const verdictInput      = document.getElementById("face-verdict-input");
+
+const modelPanel        = document.getElementById("model-loading-panel");
+const modelBar          = document.getElementById("model-bar");
+const modelPct          = document.getElementById("model-pct");
+const modelStep         = document.getElementById("model-step");
+const detectPanel       = document.getElementById("detect-panel");
+const detectBar         = document.getElementById("detect-bar");
+const detectPct         = document.getElementById("detect-pct");
+const detectStep        = document.getElementById("detect-step");
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  UI HELPERS
+// ══════════════════════════════════════════════════════════════════════════════
+const BADGE = {
   slate: "bg-slate-200 text-slate-500",
   green: "bg-emerald-100 text-emerald-700",
   amber: "bg-amber-100 text-amber-700",
   red:   "bg-red-100 text-red-700",
   blue:  "bg-blue-100 text-blue-700",
 };
-
-function setStatusBadge(text, color = "slate") {
-  statusBadge.className = `px-2 py-0.5 rounded text-[9px] font-black uppercase ${badgeClasses[color]}`;
+function setBadge(text, color = "slate") {
+  statusBadge.className = `px-2 py-0.5 rounded text-[9px] font-black uppercase ${BADGE[color] || BADGE.slate}`;
   statusBadge.textContent = text;
 }
 
-const boxClasses = {
-  slate: "bg-slate-50 border-slate-100 text-slate-600",
-  green: "bg-emerald-50 border-emerald-200 text-emerald-700",
-  amber: "bg-amber-50 border-amber-200 text-amber-700",
-  red:   "bg-red-50 border-red-200 text-red-700",
+const BOX = {
+  slate:  "bg-slate-50 border-slate-100 text-slate-600",
+  green:  "bg-emerald-50 border-emerald-200 text-emerald-700",
+  amber:  "bg-amber-50 border-amber-200 text-amber-700",
+  red:    "bg-red-50 border-red-200 text-red-700",
+  blue:   "bg-blue-50 border-blue-200 text-blue-700",
 };
-
 function showStatus(text, color = "slate") {
-  statusBox.className    = `mb-4 p-3 rounded-lg border text-center ${boxClasses[color]}`;
+  statusBox.className    = `mb-4 p-3 rounded-lg border text-center ${BOX[color] || BOX.slate}`;
   statusText.textContent = text;
   statusBox.classList.remove("hidden");
 }
+function hideStatus() { statusBox.classList.add("hidden"); }
+
+function setModelProgress(pct, step) {
+  modelPanel.classList.remove("hidden");
+  modelBar.style.width  = `${pct}%`;
+  modelPct.textContent  = `${pct}%`;
+  modelStep.textContent = step;
+}
+function hideModelProgress() { modelPanel.classList.add("hidden"); }
+
+function setDetectProgress(pct, step) {
+  detectPanel.classList.remove("hidden");
+  detectBar.style.width  = `${pct}%`;
+  detectPct.textContent  = `${pct}%`;
+  detectStep.textContent = step;
+}
+function hideDetectProgress() {
+  detectPanel.classList.add("hidden");
+  detectBar.style.width = "0%";
+  detectPct.textContent = "0%";
+}
+
+function setCapturing(on) {
+  captureBtn.disabled = on;
+  captureIcon.classList.toggle("hidden", on);
+  captureSpinner.classList.toggle("hidden", !on);
+  captureBtnLbl.textContent = on ? "Processing…" : (currentMode === "enrol" ? "Capture Face" : "Capture & Identify");
+}
+
+function enableSubmit()  { submitBtn.disabled = false; submitBtn.classList.remove("opacity-40", "cursor-not-allowed"); }
+function blockSubmit()   { submitBtn.disabled = true;  submitBtn.classList.add("opacity-40", "cursor-not-allowed"); }
 
 function updateConfidence(score) {
   confMeter.classList.remove("hidden");
   confValue.textContent = `${score.toFixed(1)}%`;
   confBar.style.width   = `${score}%`;
-  if (score >= 90) {
-    confBar.className   = "h-full rounded-full transition-all duration-700 bg-emerald-500";
-    confValue.className = "text-sm font-black text-emerald-600";
-  } else if (score >= 60) {
-    confBar.className   = "h-full rounded-full transition-all duration-700 bg-amber-500";
-    confValue.className = "text-sm font-black text-amber-600";
-  } else {
-    confBar.className   = "h-full rounded-full transition-all duration-700 bg-red-500";
-    confValue.className = "text-sm font-black text-red-600";
+  const [barCls, valCls] = score >= 90
+    ? ["bg-emerald-500", "text-emerald-600"]
+    : score >= 60
+    ? ["bg-amber-500",   "text-amber-600"]
+    : ["bg-red-500",     "text-red-600"];
+  confBar.className   = `h-full rounded-full transition-all duration-700 ${barCls}`;
+  confValue.className = `text-sm font-black ${valCls}`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  AUTO-FILL FORM (returning mode — after successful face match)
+// ══════════════════════════════════════════════════════════════════════════════
+function autoFillForm(staffData) {
+  const fieldMap = {
+    id_no:      staffData.id_no      || "",
+    name:       staffData.name       || "",
+    company:    staffData.company    || "",
+    department: staffData.department || "",
+    contact:    staffData.contact    || "",
+    phone_no:   staffData.phone_no   || "",
+    email:      staffData.email      || "",
+    vehicle:    staffData.vehicle    || "",
+    purpose:    staffData.purpose    || "",
+  };
+  Object.entries(fieldMap).forEach(([fieldName, value]) => {
+    if (!value) return;
+    const el = document.querySelector(`[name="${fieldName}"]`);
+    if (!el) return;
+    el.value = value;
+    el.classList.add("autofilled");
+    el.style.borderColor = "#10b981";
+    setTimeout(() => { el.style.borderColor = ""; }, 2500);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  STOP CAMERA UTILITY
+// ══════════════════════════════════════════════════════════════════════════════
+function stopCamera() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  videoEl.srcObject = null;
+  placeholder.classList.remove("hidden");
+  startBtnLabel.textContent = "Start Camera";
+  startBtn.disabled  = false;
+  captureBtn.disabled = true;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  STEP SELECTION — FIRST TIME vs RETURNING
+// ══════════════════════════════════════════════════════════════════════════════
+btnFirstTime.addEventListener("click", () => {
+  currentMode = "enrol";
+  stepSelectPanel.classList.add("hidden");
+  facePanel.classList.remove("hidden");
+  facePanelLabel.textContent = "Enrol New Face";
+  enrolIdPrompt.classList.remove("hidden");
+  enrolCameraPrompt.classList.add("hidden");
+  startBtn.disabled = true;    // camera locked until ID is confirmed
+  captureBtn.disabled = true;
+  captureBtnLbl.textContent = "Capture Face";
+  setBadge("ENROL", "blue");
+  showStatus("Enter the staff member's ID number to begin enrolment.", "blue");
+  loadModels();  // pre-load while security types ID
+});
+
+btnReturning.addEventListener("click", () => {
+  currentMode = "returning";
+  stepSelectPanel.classList.add("hidden");
+  facePanel.classList.remove("hidden");
+  facePanelLabel.textContent = "Returning Staff — Face Scan";
+  enrolIdPrompt.classList.add("hidden");
+  enrolCameraPrompt.classList.add("hidden");
+  startBtn.disabled = false;
+  captureBtn.disabled = true;
+  captureBtnLbl.textContent = "Capture & Identify";
+  setBadge("STANDBY", "slate");
+  showStatus("Start camera, centre face in frame, then click Capture.", "slate");
+  loadModels();
+});
+
+backBtn.addEventListener("click", () => {
+  stopCamera();
+  currentMode = null;
+  enrolIdNo   = null;
+  encodingInput.value = "";
+  verdictInput.value  = "";
+  capturedEncoding    = null;
+  blockSubmit();
+  hideStatus();
+  enrolIdPrompt.classList.add("hidden");
+  enrolCameraPrompt.classList.add("hidden");
+  confMeter.classList.add("hidden");
+  overridePanel.classList.add("hidden");
+  facePanel.classList.add("hidden");
+  stepSelectPanel.classList.remove("hidden");
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  ENROL MODE — confirm ID before camera opens
+// ══════════════════════════════════════════════════════════════════════════════
+enrolIdConfirm.addEventListener("click", () => {
+  const val = enrolIdField.value.trim();
+  if (!val) {
+    enrolIdError.textContent = "Please enter a staff ID number.";
+    enrolIdError.classList.remove("hidden");
+    return;
   }
-}
+  enrolIdError.classList.add("hidden");
+  enrolIdNo = val;
 
-function enableSubmit() {
-  submitBtn.disabled = false;
-  submitBtn.classList.remove("opacity-40", "cursor-not-allowed");
-}
+  // Pre-fill the form's id_no field so security can fill the rest
+  const idNoInput = document.querySelector('[name="id_no"]');
+  if (idNoInput) {
+    idNoInput.value = enrolIdNo;
+    idNoInput.classList.add("autofilled");
+  }
 
-function blockSubmit() {
-  submitBtn.disabled = true;
-  submitBtn.classList.add("opacity-40", "cursor-not-allowed");
-}
+  enrolIdPrompt.classList.add("hidden");
+  enrolIdDisplay.textContent = enrolIdNo;
+  enrolCameraPrompt.classList.remove("hidden");
+  startBtn.disabled = !modelsLoaded;   // unlock camera
+  if (!modelsLoaded) {
+    showStatus("Models still loading — camera will unlock shortly…", "blue");
+  } else {
+    showStatus(`ID ${enrolIdNo} confirmed. Start camera and capture face.`, "blue");
+  }
+  setBadge("ID SET", "blue");
+});
 
-// ─── Load face-api.js models ──────────────────────────────────────────────────
+// Allow pressing Enter in ID field
+enrolIdField.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); enrolIdConfirm.click(); }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  LOAD MODELS
+// ══════════════════════════════════════════════════════════════════════════════
 async function loadModels() {
-  setStatusBadge("LOADING", "blue");
-  showStatus("Loading biometric models…", "slate");
+  if (modelsLoaded || modelsLoading) return;
+  modelsLoading = true;
+  setModelProgress(0, "Starting up…");
+
   try {
-    await Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-      faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL),
-      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-    ]);
-    modelsLoaded = true;
-    setStatusBadge("READY", "green");
-    showStatus("Models loaded. Start camera to begin.", "green");
+    if (USE_SSD) {
+      setModelProgress(10, "Loading SSD face detector (high accuracy)…");
+      await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+      setModelProgress(50, "Loading landmark model…");
+    } else {
+      setModelProgress(10, "Loading face detector…");
+      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+      setModelProgress(50, "Loading landmark model…");
+    }
+    await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+    setModelProgress(80, "Loading recognition model…");
+    await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+    setModelProgress(100, "All models ready.");
+    await new Promise(r => setTimeout(r, 400));
+    hideModelProgress();
+
+    modelsLoaded  = true;
+    modelsLoading = false;
+    setBadge(currentMode === "enrol" ? "ID SET" : "READY", currentMode === "enrol" ? "blue" : "green");
+
+    // If in enrol mode and ID is already confirmed, unlock camera now
+    if (currentMode === "enrol" && enrolIdNo) {
+      startBtn.disabled = false;
+      showStatus(`Models ready. ID ${enrolIdNo} confirmed. Start camera to capture face.`, "blue");
+    } else if (currentMode === "returning") {
+      showStatus("Models loaded. Start camera to begin.", "green");
+      startBtn.disabled = false;
+    }
+
   } catch (e) {
-    setStatusBadge("ERROR", "red");
-    showStatus("Failed to load models. Ensure /static/models/ weights are present.", "red");
+    hideModelProgress();
+    modelsLoading = false;
+    setBadge("ERROR", "red");
+    showStatus("Failed to load models. Run: python download_face_models.py && python manage.py collectstatic", "red");
     console.error("face-api.js model load error:", e);
   }
 }
 
-// ─── Start camera ─────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+//  START CAMERA
+// ══════════════════════════════════════════════════════════════════════════════
 startBtn.addEventListener("click", async () => {
-  if (!modelsLoaded) await loadModels();
+  if (!modelsLoaded) {
+    await loadModels();
+    if (!modelsLoaded) return;
+  }
+  // Enrol mode: camera must not open until ID is confirmed
+  if (currentMode === "enrol" && !enrolIdNo) {
+    showStatus("Please confirm the staff ID number first.", "amber");
+    return;
+  }
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
-    videoEl.srcObject = stream;
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false,
+    });
+    videoEl.srcObject   = stream;
     placeholder.classList.add("hidden");
     captureBtn.disabled = false;
-    setStatusBadge("LIVE", "green");
-    showStatus("Camera active. Centre your face then click Capture.", "green");
-    startBtn.textContent = "Camera Active";
-    startBtn.disabled    = true;
+    startBtn.disabled   = true;
+    startBtnLabel.textContent = "Camera Active";
+    setBadge("LIVE", "green");
+    showStatus(
+      currentMode === "enrol"
+        ? `Camera active. Centre ${enrolIdNo}'s face in the frame and click Capture.`
+        : "Camera active. Centre face in the frame and click Capture.",
+      "green"
+    );
   } catch (e) {
-    setStatusBadge("DENIED", "red");
-    showStatus("Camera access denied. Please allow camera permissions and try again.", "red");
+    setBadge("DENIED", "red");
+    showStatus("Camera access denied. Please allow camera permissions and refresh.", "red");
   }
 });
 
-// ─── Capture & encode ─────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+//  CAPTURE BUTTON  — runs capture for BOTH modes
+// ══════════════════════════════════════════════════════════════════════════════
 captureBtn.addEventListener("click", async () => {
-  captureBtn.disabled     = true;
-  captureBtn.textContent  = "Processing...";
-  setStatusBadge("SCANNING", "blue");
-  showStatus("Detecting face…", "slate");
+  if (!videoEl.srcObject) return;
+
+  setCapturing(true);
+  hideDetectProgress();
+  setBadge("SCANNING", "blue");
+  showStatus("Detecting face in frame…", "slate");
+  setDetectProgress(10, "Capturing frame…");
+
+  detectTimer = setTimeout(() => {
+    setCapturing(false);
+    hideDetectProgress();
+    setBadge("TIMEOUT", "red");
+    showStatus("Detection timed out (>12s). Check lighting and face position, then try again.", "red");
+  }, DETECT_TIMEOUT_MS);
 
   try {
-    const options   = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
-    const detection = await faceapi
-      .detectSingleFace(videoEl, options)
-      .withFaceLandmarks(true)
-      .withFaceDescriptor();
+    setDetectProgress(30, "Running face detector…");
+    let detection;
+    if (USE_SSD) {
+      detection = await faceapi
+        .detectSingleFace(videoEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+    } else {
+      detection = await faceapi
+        .detectSingleFace(videoEl, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 }))
+        .withFaceLandmarks(false)
+        .withFaceDescriptor();
+    }
+
+    clearTimeout(detectTimer);
 
     if (!detection) {
-      setStatusBadge("NO FACE", "red");
-      showStatus("No face detected. Centre your face in the frame and try again.", "red");
-      captureBtn.disabled    = false;
-      captureBtn.textContent = "Capture & Verify";
+      setCapturing(false);
+      hideDetectProgress();
+      setBadge("NO FACE", "red");
+      showStatus("No face detected. Face the camera directly and ensure even lighting.", "red");
       return;
     }
 
-    // Draw bounding box on overlay canvas
+    setDetectProgress(80, "Generating face encoding…");
     const dims = faceapi.matchDimensions(overlayCanvas, videoEl, true);
     faceapi.draw.drawDetections(overlayCanvas, faceapi.resizeResults(detection, dims));
 
-    capturedEncoding    = Array.from(detection.descriptor); // 128 floats
+    capturedEncoding    = Array.from(detection.descriptor);
     encodingInput.value = JSON.stringify(capturedEncoding);
 
-    setStatusBadge("CAPTURED", "green");
-    showStatus("Face captured. Checking against records…", "green");
+    setDetectProgress(100, "Encoding complete.");
+    await new Promise(r => setTimeout(r, 300));
+    hideDetectProgress();
+    setCapturing(false);
 
-    await runFaceCheck();
+    // Stop camera — we have what we need
+    stopCamera();
+
+    if (currentMode === "enrol") {
+      await runEnrolment();
+    } else {
+      await runFaceSearch();
+    }
 
   } catch (e) {
-    console.error("Capture error:", e);
-    setStatusBadge("ERROR", "red");
-    showStatus("Capture failed. Please try again.", "red");
-    captureBtn.disabled    = false;
-    captureBtn.textContent = "Capture & Verify";
+    clearTimeout(detectTimer);
+    setCapturing(false);
+    hideDetectProgress();
+    setBadge("ERROR", "red");
+    showStatus("Capture error. Please try again.", "red");
+    console.error("Face capture error:", e);
   }
 });
 
-// ─── Face check (verify or enroll) ───────────────────────────────────────────
-async function runFaceCheck() {
-  const idNoField = document.querySelector('input[name="id_no"]');
-  const idNo      = idNoField ? idNoField.value.trim() : "";
-
-  if (!idNo) {
-    showStatus("Please enter the staff ID Number first.", "amber");
-    captureBtn.disabled    = false;
-    captureBtn.textContent = "Capture & Verify";
-    return;
-  }
+// ══════════════════════════════════════════════════════════════════════════════
+//  ENROLMENT PATH
+//  Face is captured → call /face/enroll/ → pre-fill id_no in form → enable submit
+// ══════════════════════════════════════════════════════════════════════════════
+async function runEnrolment() {
+  setBadge("ENROLLING", "blue");
+  showStatus("Enrolling face — please wait…", "blue");
 
   try {
-    const resp = await fetch(VERIFY_URL, {
+    const resp = await fetch(ENROLL_URL, {
       method:  "POST",
       headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF_TOKEN },
-      body:    JSON.stringify({ id_no: idNo, encoding: capturedEncoding }),
+      body:    JSON.stringify({ id_no: enrolIdNo, encoding: capturedEncoding }),
+    });
+    const data = await resp.json();
+
+    if (!data.success) {
+      // Enrol endpoint returns an error (e.g. no prior record found with that ID)
+      // This is FINE for a brand-new staff member — the encoding will be saved
+      // via the hidden face_encoding field on form submit instead.
+      // Just let security fill in the form manually and check in.
+      setBadge("CAPTURED", "blue");
+      verdictInput.value = "enroll";
+      showStatus(
+        `Face captured for ID ${enrolIdNo}. Fill in the form details and click Authorize Entry. Face will be enrolled on check-in.`,
+        "blue"
+      );
+      enableSubmit();
+      return;
+    }
+
+    // Enrolment pre-saved (staff already had a prior record)
+    setBadge("ENROLLED ✓", "green");
+    verdictInput.value = "enroll";
+    showStatus(
+      `Face enrolled successfully for ${data.message}. Fill in remaining details and click Authorize Entry.`,
+      "green"
+    );
+    enableSubmit();
+
+  } catch (e) {
+    console.error("Enrol error:", e);
+    // Network error — still let the form submit; the hidden encoding field will save it server-side
+    setBadge("CAPTURED", "blue");
+    verdictInput.value = "enroll";
+    showStatus(
+      `Face captured. Network issue during pre-enrolment (will be saved on check-in). Fill in form and proceed.`,
+      "amber"
+    );
+    enableSubmit();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  FACE SEARCH PATH (returning staff)
+// ══════════════════════════════════════════════════════════════════════════════
+async function runFaceSearch() {
+  setBadge("SEARCHING", "blue");
+  showStatus("Searching for face match…", "slate");
+
+  try {
+    const resp = await fetch(SEARCH_URL, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF_TOKEN },
+      body:    JSON.stringify({ encoding: capturedEncoding }),
     });
     const data = await resp.json();
 
     if (!data.success) {
       showStatus(`Error: ${data.error}`, "red");
-      captureBtn.disabled    = false;
-      captureBtn.textContent = "Capture & Verify";
       return;
     }
-
-    handleVerifyResult(data);
+    handleSearchResult(data);
 
   } catch (e) {
-    console.error("Verify network error:", e);
-    showStatus("Network error. You may proceed manually — mismatch will be logged.", "amber");
-    verdictInput.value = "error";
-    enableSubmit();
+    console.error("Face search error:", e);
+    showStatus("Network error during face search. Please try again or go back and use First Time mode.", "amber");
+    setBadge("NET ERR", "red");
   }
 }
 
-// ─── Handle verify response ───────────────────────────────────────────────────
-function handleVerifyResult(data) {
+// ══════════════════════════════════════════════════════════════════════════════
+//  HANDLE FACE SEARCH RESULT
+// ══════════════════════════════════════════════════════════════════════════════
+function handleSearchResult(data) {
   lastLogId = data.log_id || null;
 
-  if (data.verdict === "enroll") {
-    verdictInput.value = "enroll";
-    setStatusBadge("NEW STAFF", "blue");
-    showStatus("New staff member — face will be enrolled automatically on check-in.", "slate");
-    enableSubmit();
+  if (data.verdict === "no_match") {
+    // Face not recognised — guide security to use First Time mode instead
+    setBadge("NO MATCH", "amber");
+    showStatus(
+      "Face not recognised. If this is a new staff member, go back and select 'First Time' to enrol them.",
+      "amber"
+    );
+    // Show back button hint and let security decide
     return;
   }
 
+  if (data.staff) {
+    autoFillForm(data.staff);
+    verdictInput.value = data.verdict;
+  }
   updateConfidence(data.confidence);
 
   if (data.verdict === "matched") {
-    verdictInput.value = "matched";
-    setStatusBadge("MATCHED", "green");
-    showStatus(data.message, "green");
+    setBadge("MATCHED ✓", "green");
+    showStatus(`${data.message} — submitting in 1.5 s…`, "green");
     overridePanel.classList.add("hidden");
-    enableSubmit();
+    setTimeout(() => { document.getElementById("staffForm").submit(); }, 1500);
 
   } else if (data.verdict === "warned") {
-    verdictInput.value = "warned";
-    setStatusBadge("WARN", "amber");
+    setBadge("WARN ⚠", "amber");
     showStatus(data.message, "amber");
-    overrideMsg.textContent = `Confidence ${data.confidence.toFixed(1)}% is below the 90% threshold. Log an override reason or retry.`;
+    overrideMsg.textContent =
+      `Confidence ${data.confidence.toFixed(1)}% is below 90%. Verify the auto-filled details, then proceed or override.`;
     overridePanel.classList.remove("hidden");
-    enableSubmit(); // still allowed but override is visible
-
-  } else if (data.verdict === "blocked") {
-    verdictInput.value = "blocked";
-    setStatusBadge("BLOCKED", "red");
-    showStatus(data.message, "red");
-    overrideMsg.textContent = `Confidence ${data.confidence.toFixed(1)}% is critically low. A security override with reason is required.`;
-    overridePanel.classList.remove("hidden");
-    blockSubmit(); // must log override before submit enabled
+    enableSubmit();
+  } else {
+    setBadge("REVIEW", "slate");
+    showStatus(data.message || "Review required.", "slate");
+    enableSubmit();
   }
 }
 
-// ─── Override button ──────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+//  OVERRIDE BUTTON
+// ══════════════════════════════════════════════════════════════════════════════
 overrideBtn.addEventListener("click", async () => {
   const reason = overrideInput.value.trim();
-  if (!reason) {
-    overrideInput.classList.add("ring-2", "ring-red-400");
-    return;
-  }
+  if (!reason) { overrideInput.classList.add("ring-2", "ring-red-400"); return; }
   overrideInput.classList.remove("ring-2", "ring-red-400");
 
-  const idNo = (document.querySelector('input[name="id_no"]') || {}).value || "";
-
+  const idNo = (document.querySelector('[name="id_no"]') || {}).value || "";
   try {
     await fetch(OVERRIDE_URL, {
       method:  "POST",
       headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF_TOKEN },
       body:    JSON.stringify({ id_no: idNo, reason, last_log_id: lastLogId }),
     });
-  } catch (_) { /* best-effort — the form POST will still record the verdict */ }
+  } catch (_) { /* best-effort */ }
 
   verdictInput.value = "override";
-  setStatusBadge("OVERRIDE", "amber");
+  setBadge("OVERRIDE", "amber");
   showStatus("Override logged. You may now proceed with check-in.", "amber");
   overridePanel.classList.add("hidden");
   enableSubmit();
 });
 
-// ─── Pre-load models on page ready ───────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+//  INIT — wait for face-api.js then do NOT pre-load models yet
+//         (models load when a mode is selected to avoid wasted loading
+//          if the user navigates away immediately)
+// ══════════════════════════════════════════════════════════════════════════════
 document.addEventListener("DOMContentLoaded", () => {
-  const waitForFaceApi = setInterval(() => {
-    if (typeof faceapi !== "undefined") {
-      clearInterval(waitForFaceApi);
-      loadModels();
-    }
-  }, 200);
+  blockSubmit();   // submit is always blocked until face step completes
+  // Models are loaded on mode selection, not on page load
 });
 
 window.addEventListener("beforeunload", () => {
-  if (stream) stream.getTracks().forEach(t => t.stop());
+  stopCamera();
+  if (detectTimer) clearTimeout(detectTimer);
 });
 </script>
 
 <script>
   setTimeout(() => {
-    const notify = document.getElementById("notify");
-    if (notify) notify.style.display = "none";
+    const n = document.getElementById("notify");
+    if (n) n.style.display = "none";
   }, 2000);
 </script>
 {% endblock %}
