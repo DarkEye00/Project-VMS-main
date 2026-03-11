@@ -25,7 +25,7 @@ from django.conf import settings
 from django.contrib.auth.views import PasswordChangeView
 from django.urls import reverse, reverse_lazy
 from django.http import HttpResponseForbidden, JsonResponse, HttpResponse
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import csv
 from .forms import StaffCheckInOutForm, PreBookForm
 from .models import StaffCheckInOut
@@ -45,6 +45,54 @@ from .services.face_service import validate_encoding
 
 def home(request):
     return render(request, "home.html")
+
+
+# ── Warehouse policy config ───────────────────────────────────────────────────
+
+WORK_START_HOUR  = 6    # 06:00 EAT — change if needed
+WORK_END_HOUR    = 5    # 17:00 EAT — change if needed
+WORK_DAYS      = (0, 1, 2, 3, 4, 5)  # Mon=0 … Sat=5. Sunday=6 is blocked.
+OVERTIME_HOUR  =  2                # On site AT or AFTER 17:00 EAT = overtime
+LONG_STAY_HOUR = 19                   # On site AT or AFTER 19:00 EAT = escalate
+
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _hours_on_site(time_in, time_out=None):
+    """Return hours (float) between time_in and time_out (or now)."""
+    end   = time_out or timezone.now()
+    delta = end - time_in
+    return round(delta.total_seconds() / 3600, 2)
+
+
+def _format_duration(hours):
+    """Convert float hours to readable string e.g. '7h 23m'."""
+    total_minutes = int(hours * 60)
+    h, m = divmod(total_minutes, 60)
+    return f"{h}h {m:02d}m"
+
+
+def _is_overtime(time_in, time_out=None):
+    """
+    True if the session is overtime.
+
+    Policy: staff who checked in BEFORE 17:00 and are still on site
+    (or checked out) AT or AFTER 17:00 are on overtime.
+
+    Staff who check in at/after 17:00 are on a later shift — not flagged.
+    """
+    end = time_out or timezone.now()
+    return time_in.hour < OVERTIME_HOUR and end.hour >= OVERTIME_HOUR
+
+
+def _is_long_stay(time_in, time_out=None):
+    """
+    Escalated overtime alert.
+    Checked in before 17:00 and still on site at/after 19:00.
+    """
+    end = time_out or timezone.now()
+    return time_in.hour < OVERTIME_HOUR and end.hour >= LONG_STAY_HOUR
+
 
 def register(request):
     if request.method == "POST":
@@ -571,6 +619,7 @@ def security_profile(request):
 
     return render(request, 'profile.html', context)
 
+
 @login_required
 def staff_check_in(request):
     if request.method == "POST":
@@ -578,43 +627,48 @@ def staff_check_in(request):
 
         if form.is_valid():
             id_no = form.cleaned_data.get("id_no", "").strip()
+            now   = timezone.now()
 
-            # ── Duplicate check-in guard ──────────────────────────────────────
-            # A staff member is "currently inside" if there is any row with
-            # their id_no where time_out is still None (not yet checked out).
+            # ── 1. Sunday block ───────────────────────────────────────────────
+            if now.weekday() not in WORK_DAYS:
+                messages.error(
+                    request,
+                    "⛔ Check-in blocked — the warehouse is closed on Sundays."
+                )
+                return render(request, "staff.html", {"form": form})
+
+            # ── 2. Duplicate check-in guard ───────────────────────────────────
             if id_no:
-                active_session = (
+                active = (
                     StaffCheckInOut.objects
                     .filter(id_no=id_no, time_out__isnull=True)
                     .order_by("-time_in")
                     .first()
                 )
-                if active_session:
-                    # Reject — do NOT call form.save()
+                if active:
                     time_in_fmt = (
-                        active_session.time_in.strftime("%d %b %Y, %I:%M %p")
-                        if active_session.time_in else "unknown time"
+                        active.time_in.strftime("%d %b %Y, %I:%M %p")
+                        if active.time_in else "unknown time"
                     )
                     messages.error(
                         request,
-                        f"⚠ {active_session.name} (ID: {id_no}) is already checked in "
+                        f"⚠ {active.name} (ID: {id_no}) is already checked in "
                         f"since {time_in_fmt} and has not yet checked out. "
                         f"Please check them out before checking in again."
                     )
-                    # Re-render with form data intact so security doesn't lose input
                     return render(request, "staff.html", {"form": form})
 
-            # ── No active session — safe to proceed ───────────────────────────
+            # ── 3. Save ───────────────────────────────────────────────────────
             staff = form.save()
 
-            # ── Handle face encoding from hidden field ────────────────────────
+            # ── 4. Face encoding ──────────────────────────────────────────────
             raw_encoding = request.POST.get("face_encoding", "").strip()
             face_verdict = request.POST.get("face_verdict", "").strip()
 
             if raw_encoding and face_verdict:
                 try:
                     encoding = _json.loads(raw_encoding)
-                    ok, msg = validate_encoding(encoding)
+                    ok, _msg = validate_encoding(encoding)
                     if ok:
                         StaffFaceProfile.objects.update_or_create(
                             staff=staff,
@@ -630,12 +684,23 @@ def staff_check_in(request):
                         FaceVerificationLog.objects.create(
                             staff=staff,
                             staff_id_no=staff.id_no,
-                            outcome=outcome_map.get(face_verdict, FaceVerificationLog.Outcome.ENROLLED),
+                            outcome=outcome_map.get(
+                                face_verdict, FaceVerificationLog.Outcome.ENROLLED
+                            ),
                         )
                 except (ValueError, TypeError):
-                    pass  # Bad JSON — skip silently, check-in still proceeds
+                    pass
 
-            messages.success(request, f"{staff.name} checked in successfully.")
+            # Warn if checking in already in OT hours
+            if now.hour >= OVERTIME_HOUR:
+                messages.warning(
+                    request,
+                    f"{staff.name} checked in at {now.strftime('%H:%M')} EAT "
+                    f"— this is past standard hours (overtime rates may apply)."
+                )
+            else:
+                messages.success(request, f"{staff.name} checked in successfully.")
+
             return redirect("userauth:staff_logs")
 
     else:
@@ -644,18 +709,186 @@ def staff_check_in(request):
     return render(request, "staff.html", {"form": form})
 
 
+
 @login_required
 def staff_check_out(request, staff_id):
     staff = get_object_or_404(StaffCheckInOut, id=staff_id)
 
-    if staff.time_out is None:
-        staff.time_out = timezone.now()
-        staff.save()
-        messages.success(request, f"{staff.name} checked out successfully.")
-    else:
+    if staff.time_out is not None:
         messages.warning(request, f"{staff.name} has already checked out.")
-    return redirect('userauth:staff_logs')
+        return redirect("userauth:staff_logs")
 
+    staff.time_out = timezone.now()
+    staff.save()
+
+    hours        = _hours_on_site(staff.time_in, staff.time_out)
+    duration_str = _format_duration(hours)
+    ot           = _is_overtime(staff.time_in, staff.time_out)
+    long_stay    = _is_long_stay(staff.time_in, staff.time_out)
+
+    if long_stay:
+        messages.warning(
+            request,
+            f"⚠ {staff.name} checked out at {staff.time_out.strftime('%H:%M')} EAT "
+            f"after {duration_str} on site — well into overtime, please verify "
+            f"this was authorised by a supervisor."
+        )
+    elif ot:
+        messages.warning(
+            request,
+            f"{staff.name} checked out at {staff.time_out.strftime('%H:%M')} EAT "
+            f"after {duration_str} on site (overtime)."
+        )
+    else:
+        messages.success(
+            request,
+            f"{staff.name} checked out successfully. Time on site: {duration_str}."
+        )
+
+    return redirect("userauth:staff_attendance")
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  staff_dashboard
+# ══════════════════════════════════════════════════════════════════════════════
+
+@login_required
+def staff_dashboard(request):
+    now = timezone.now()
+
+    active_sessions = (
+        StaffCheckInOut.objects
+        .filter(time_out__isnull=True)
+        .order_by("time_in")
+    )
+
+    staff_inside    = []
+    overtime_count  = 0
+    long_stay_count = 0
+
+    for s in active_sessions:
+        hours     = _hours_on_site(s.time_in)
+        ot        = _is_overtime(s.time_in)
+        long_stay = _is_long_stay(s.time_in)
+
+        if long_stay:
+            long_stay_count += 1
+        elif ot:
+            overtime_count  += 1
+
+        staff_inside.append({
+            "record":       s,
+            "hours":        hours,
+            "duration_str": _format_duration(hours),
+            "is_overtime":  ot,
+            "is_long_stay": long_stay,
+        })
+
+    today_start      = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    recent_checkouts = (
+        StaffCheckInOut.objects
+        .filter(time_out__gte=today_start)
+        .order_by("-time_out")[:10]
+    )
+    todays_checkins = StaffCheckInOut.objects.filter(
+        time_in__gte=today_start
+    ).count()
+
+    context = {
+        "staff_inside":     staff_inside,
+        "total_inside":     len(staff_inside),
+        "overtime_count":   overtime_count,
+        "long_stay_count":  long_stay_count,
+        "recent_checkouts": recent_checkouts,
+        "todays_checkins":  todays_checkins,
+        "now":              now,
+        "overtime_hour":    OVERTIME_HOUR,
+        "long_stay_hour":   LONG_STAY_HOUR,
+    }
+    return render(request, "staff_dashboard.html", context)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  staff_attendance
+# ══════════════════════════════════════════════════════════════════════════════
+
+@login_required
+def staff_attendance(request):
+    date_str = request.GET.get("date", "")
+    try:
+        report_date = date.fromisoformat(date_str)
+    except ValueError:
+        report_date = timezone.now().date()
+
+    day_start = timezone.make_aware(
+        timezone.datetime(report_date.year, report_date.month, report_date.day, 0, 0, 0)
+    )
+    day_end = day_start + timedelta(days=1)
+
+    records = (
+        StaffCheckInOut.objects
+        .filter(time_in__gte=day_start, time_in__lt=day_end)
+        .order_by("department", "time_in")
+    )
+
+    rows               = []
+    department_summary = {}
+
+    for r in records:
+        hours     = _hours_on_site(r.time_in, r.time_out) if r.time_out else None
+        ot        = _is_overtime(r.time_in, r.time_out)
+        long_stay = _is_long_stay(r.time_in, r.time_out)
+
+        rows.append({
+            "record":       r,
+            "hours":        hours,
+            "duration_str": _format_duration(hours) if hours is not None else "Still inside",
+            "is_overtime":  ot,
+            "is_long_stay": long_stay,
+            "still_inside": r.time_out is None,
+        })
+
+        dept = r.department or "Unassigned"
+        if dept not in department_summary:
+            department_summary[dept] = {"count": 0, "overtime": 0}
+        department_summary[dept]["count"] += 1
+        if ot:
+            department_summary[dept]["overtime"] += 1
+
+    # CSV export
+    if request.GET.get("export") == "csv":
+        response = HttpResponse(content_type="text/csv")
+        filename = f"attendance_{report_date.isoformat()}.csv"
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        writer = csv.writer(response)
+        writer.writerow([
+            "Name", "ID No", "Department", "Phone No",
+            "Check-In", "Check-Out", "Hours on Site", "Overtime"
+        ])
+        for row in rows:
+            r = row["record"]
+            writer.writerow([
+                r.name,
+                r.id_no,
+                r.department or "",
+                r.phone_no   or "",
+                r.time_in.strftime("%d %b %Y, %I:%M %p")  if r.time_in  else "",
+                r.time_out.strftime("%d %b %Y, %I:%M %p") if r.time_out else "Still inside",
+                row["duration_str"],
+                "Yes" if row["is_overtime"] else "No",
+            ])
+        return response
+
+    context = {
+        "rows":               rows,
+        "report_date":        report_date,
+        "total":              len(rows),
+        "department_summary": department_summary,
+        "prev_date":          (report_date - timedelta(days=1)).isoformat(),
+        "next_date":          (report_date + timedelta(days=1)).isoformat(),
+        "today":              timezone.now().date().isoformat(),
+        "overtime_hour":      OVERTIME_HOUR,
+    }
+    return render(request, "staff_attendance.html", context)
 
 @login_required
 def staff_logs(request):

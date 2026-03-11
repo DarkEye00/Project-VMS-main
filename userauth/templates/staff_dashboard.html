@@ -1,0 +1,147 @@
+{% extends 'nav.html' %}
+{% block content %}
+<meta http-equiv="refresh" content="60">
+<section class="min-h-screen bg-[#f8f9fa] font-sans text-slate-800">
+<main class="p-4 sm:p-6 md:p-8 max-w-6xl mx-auto space-y-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-lg font-black text-slate-900 uppercase tracking-widest">Live Dashboard</h1>
+      <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+        Auto-refreshes every 60 seconds &nbsp;·&nbsp; {{ now|date:"D d M Y, H:i" }} EAT
+      </p>
+    </div>
+    <div class="flex gap-3">
+      <a href="{% url 'userauth:staff_attendance' %}"
+        class="px-4 py-2 bg-white border-2 border-slate-200 text-slate-600 text-[10px] font-black
+               rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-all">
+        Attendance Report
+      </a>
+      <a href="{% url 'userauth:staff_check_in' %}"
+        class="px-4 py-2 bg-emerald-600 text-white text-[10px] font-black rounded-xl
+               uppercase tracking-widest hover:bg-emerald-700 transition-all border-b-2 border-emerald-800">
+        + Check In
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+      <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Currently Inside</p>
+      <p class="text-4xl font-black text-slate-900">{{ total_inside }}</p>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+      <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Today's Check-Ins</p>
+      <p class="text-4xl font-black text-emerald-600">{{ todays_checkins }}</p>
+    </div>
+
+    <div class="bg-white rounded-2xl border {% if overtime_count > 0 %}border-amber-300 bg-amber-50{% else %}border-slate-200{% endif %} shadow-sm p-5">
+      <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Overtime (after {{ overtime_hour }}:00)</p>
+      <p class="text-4xl font-black {% if overtime_count > 0 %}text-amber-600{% else %}text-slate-900{% endif %}">
+        {{ overtime_count }}
+      </p>
+    </div>
+
+    <div class="bg-white rounded-2xl border {% if long_stay_count > 0 %}border-red-300 bg-red-50{% else %}border-slate-200{% endif %} shadow-sm p-5">
+      <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Long Stay (after {{ long_stay_hour }}:00)</p>
+      <p class="text-4xl font-black {% if long_stay_count > 0 %}text-red-600{% else %}text-slate-900{% endif %}">
+        {{ long_stay_count }}
+      </p>
+    </div>
+
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Who's inside -->
+    <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="bg-slate-900 px-6 py-4 flex items-center justify-between">
+        <h2 class="text-[10px] font-black text-white uppercase tracking-widest">Staff Currently Inside</h2>
+        <span class="px-2 py-0.5 bg-emerald-500 text-white text-[9px] font-black rounded uppercase">
+          {{ total_inside }} on site
+        </span>
+      </div>
+
+      {% if staff_inside %}
+      <div class="divide-y divide-slate-100">
+        {% for item in staff_inside %}
+        <div class="px-6 py-4 flex items-center justify-between
+          {% if item.is_long_stay %}bg-red-50{% elif item.is_overtime %}bg-amber-50{% endif %}">
+          <div class="flex items-center gap-4">
+            <!-- Initials avatar -->
+            <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-black text-white
+              {% if item.is_long_stay %}bg-red-500{% elif item.is_overtime %}bg-amber-500{% else %}bg-emerald-600{% endif %}">
+              {{ item.record.name|slice:":2"|upper }}
+            </div>
+            <div>
+              <p class="text-sm font-black text-slate-900">{{ item.record.name }}</p>
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wide">
+                {{ item.record.id_no }}
+                {% if item.record.department %} · {{ item.record.department }}{% endif %}
+              </p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-black
+              {% if item.is_long_stay %}text-red-600{% elif item.is_overtime %}text-amber-600{% else %}text-slate-700{% endif %}">
+              {{ item.duration_str }}
+            </p>
+            <p class="text-[10px] text-slate-400 font-bold">
+              In: {{ item.record.time_in|date:"H:i" }}
+              {% if item.is_long_stay %}
+                <span class="ml-1 px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[8px] font-black uppercase">Long Stay</span>
+              {% elif item.is_overtime %}
+                <span class="ml-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[8px] font-black uppercase">Overtime</span>
+              {% endif %}
+            </p>
+          </div>
+          <!-- Quick checkout -->
+          <a href="{% url 'userauth:staff_check_out' item.record.id %}"
+            onclick="return confirm('Check out {{ item.record.name }}?')"
+            class="ml-4 px-3 py-1.5 bg-slate-100 text-slate-600 text-[9px] font-black rounded-lg
+                   uppercase tracking-widest hover:bg-red-100 hover:text-red-700 transition-all">
+            Check Out
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="px-6 py-16 text-center">
+        <p class="text-slate-400 text-sm font-bold">No staff currently on site.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Recent activity -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="bg-slate-900 px-6 py-4">
+        <h2 class="text-[10px] font-black text-white uppercase tracking-widest">Recent Check-Outs Today</h2>
+      </div>
+      {% if recent_checkouts %}
+      <div class="divide-y divide-slate-100">
+        {% for s in recent_checkouts %}
+        <div class="px-5 py-3">
+          <p class="text-sm font-black text-slate-800">{{ s.name }}</p>
+          <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wide">
+            Out: {{ s.time_out|date:"H:i" }}
+            {% if s.department %} · {{ s.department }}{% endif %}
+          </p>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="px-6 py-10 text-center">
+        <p class="text-slate-400 text-xs font-bold">No check-outs yet today.</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+</main>
+</section>
+{% endblock %}

@@ -11,35 +11,19 @@ from userauth.face_views import enroll_face, face_search, verify_face, override_
 app_name = 'userauth'
 
 urlpatterns = [
+    # --- authentication ---------------------------------------------------
     path("register/", views.register, name="register"),
     path("login/", views.login_view, name="login"),
-    path("security_personnel/", views.security_view, name="security"),
     path("logout/", views.logout_view, name="logout"),
-    path('check-out/<int:visitor_id>/', views.check_out, name='check_out'),
-    path("host/", views.host_view, name="host"),
     path("verify/", views.verify_otp, name="verify"),
-    path('security/profile/', views.security_profile, name='profile'),
     path('password-change/', CustomPasswordChangeView.as_view(), name='password_change'),
-    path("export-csv/", views.export_visitors_csv, name="export_csv"),
-    path("export-staff-csv/", views.export_staff_csv, name="export-staff_csv"),
-    path('staff/check-in/', views.staff_check_in, name='staff_check_in'),
-    path('staff/check-out/<int:staff_id>/', views.staff_check_out, name='staff_check_out'),
-    path('staff/logs/', views.staff_logs, name='staff_logs'),
-    #path('pre-register/', views.pre_register_visitor, name='pre_register_visitor'),
-    path('prebook/', views.prebook, name='prebook'),
-    #path('pre-register/success/', views.pre_register_success, name='pre_register_success'),
-    path('visitor-check-in/', views.visitor_check_in, name='visitor_check_in'),
-    #path('guestselfcheckin/', views.guestselfcheckin, name='guestselfcheckin'),
-    path('visitors-overview/', views.visitors_overview, name='visitors_history'),
-    #path('pre-register/', views.pre_register_success, name='pre-register'),
-    path('guestconfirm/', views.guest_confirm, name='guestconfirm'),
 
-    # ---password reset urls---
+    # --- password reset urls ---------------------------------------------
     path(
         'password_reset/',
         auth_views.PasswordResetView.as_view(
             template_name='password_reset_form.html',
-            success_url=reverse_lazy('userauth:password_reset_done')  # <-- correct
+            success_url=reverse_lazy('userauth:password_reset_done')
         ),
         name='password_reset'
     ),
@@ -65,8 +49,32 @@ urlpatterns = [
         ),
         name='password_reset_complete'
     ),
-#--Face recognition endpoints ───────────────────────────────────────────────
-    
+
+    # --- visitor management ----------------------------------------------
+    #path('pre-register/', views.pre_register_visitor, name='pre_register_visitor'),
+    path('prebook/', views.prebook, name='prebook'),
+    #path('pre-register/success/', views.pre_register_success, name='pre_register_success'),
+    path('visitor-check-in/', views.visitor_check_in, name='visitor_check_in'),
+    #path('guestselfcheckin/', views.guestselfcheckin, name='guestselfcheckin'),
+    path('visitors-overview/', views.visitors_overview, name='visitors_history'),
+    #path('pre-register/', views.pre_register_success, name='pre-register'),
+    path('guestconfirm/', views.guest_confirm, name='guestconfirm'),
+    path('check-out/<int:visitor_id>/', views.check_out, name='check_out'),
+    path("host/", views.host_view, name="host"),
+
+    # --- staff operations ------------------------------------------------
+    path('staff/check-in/', views.staff_check_in, name='staff_check_in'),
+    path('staff/check-out/<int:staff_id>/', views.staff_check_out, name='staff_check_out'),
+    path("export-csv/", views.export_visitors_csv, name="export_csv"),
+    path("export-staff-csv/", views.export_staff_csv, name="export_staff_csv"),
+    path("staff/dashboard/", views.staff_dashboard, name="staff_dashboard"),
+    path("staff/attendance/", views.staff_attendance, name="staff_attendance"),
+
+    # --- security personnel ---------------------------------------------
+    path("security_personnel/", views.security_view, name="security"),
+    path('security/profile/', views.security_profile, name='profile'),
+
+    # --- face recognition endpoints --------------------------------------
     # face_search : face-first identification (no id_no needed for return visits)
     path("staff/face/search/",   face_search,   name="face_search"),
     # enroll_face : first-time enrolment (id_no required)

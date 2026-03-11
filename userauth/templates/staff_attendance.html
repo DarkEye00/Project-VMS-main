@@ -1,0 +1,140 @@
+{% extends 'nav.html' %}
+{% block content %}
+<section class="min-h-screen bg-[#f8f9fa] font-sans text-slate-800">
+<main class="p-4 sm:p-6 md:p-8 max-w-6xl mx-auto space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-lg font-black text-slate-900 uppercase tracking-widest">Attendance Report</h1>
+      <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+        Daily check-in breakdown by department
+      </p>
+    </div>
+    <div class="flex flex-wrap gap-2 items-center">
+      <!-- Date navigation -->
+      <a href="?date={{ prev_date }}"
+        class="px-3 py-2 bg-white border-2 border-slate-200 text-slate-600 text-[10px] font-black
+               rounded-xl hover:bg-slate-50 transition-all">← Prev</a>
+
+      <input type="date" id="datePicker" value="{{ report_date|date:'Y-m-d' }}"
+        max="{{ today }}"
+        class="px-3 py-2 bg-white border-2 border-slate-200 text-slate-700 text-[11px] font-bold
+               rounded-xl focus:outline-none focus:border-emerald-400 cursor-pointer"
+        onchange="window.location='?date='+this.value">
+
+      {% if report_date.isoformat != today %}
+        <a href="?date={{ next_date }}"
+          class="px-3 py-2 bg-white border-2 border-slate-200 text-slate-600 text-[10px] font-black
+                 rounded-xl hover:bg-slate-50 transition-all">Next →</a>
+      {% endif %}
+
+      <!-- CSV export -->
+      <a href="?date={{ report_date|date:'Y-m-d' }}&export=csv"
+        class="px-4 py-2 bg-slate-800 text-white text-[10px] font-black rounded-xl
+               uppercase tracking-widest hover:bg-slate-600 transition-all">
+        Export CSV
+      </a>
+
+      <a href="{% url 'userauth:staff_dashboard' %}"
+        class="px-4 py-2 bg-emerald-600 text-white text-[10px] font-black rounded-xl
+               uppercase tracking-widest hover:bg-emerald-700 transition-all border-b-2 border-emerald-800">
+        Live Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Department summary cards -->
+  {% if department_summary %}
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+    {% for dept, stats in department_summary.items %}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+      <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">{{ dept }}</p>
+      <p class="text-3xl font-black text-slate-900">{{ stats.count }}</p>
+      {% if stats.overtime > 0 %}
+        <p class="text-[9px] text-amber-600 font-bold mt-1">{{ stats.overtime }} overtime</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+    <!-- Total card -->
+    <div class="bg-slate-900 rounded-2xl border border-slate-700 shadow-sm p-4">
+      <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total</p>
+      <p class="text-3xl font-black text-white">{{ total }}</p>
+      <p class="text-[9px] text-slate-400 font-bold mt-1">checked in</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Records table -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+    <div class="bg-slate-900 px-6 py-4 flex items-center justify-between">
+      <h2 class="text-[10px] font-black text-white uppercase tracking-widest">
+        {{ report_date|date:"l, d F Y" }}
+      </h2>
+      <span class="px-2 py-0.5 bg-slate-700 text-slate-300 text-[9px] font-black rounded uppercase">
+        {{ total }} record{{ total|pluralize }}
+      </span>
+    </div>
+
+    {% if rows %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-slate-50 border-b border-slate-200">
+            <th class="px-6 py-3 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest">Name</th>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest">ID</th>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest">Department</th>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest">Check-In</th>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest">Check-Out</th>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest">Hours</th>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for row in rows %}
+          <tr class="hover:bg-slate-50 transition-colors
+            {% if row.is_long_stay %}bg-red-50{% elif row.is_overtime %}bg-amber-50{% endif %}">
+            <td class="px-6 py-3 font-black text-slate-900">{{ row.record.name }}</td>
+            <td class="px-4 py-3 text-slate-500 font-mono text-xs">{{ row.record.id_no }}</td>
+            <td class="px-4 py-3 text-slate-500">{{ row.record.department|default:"—" }}</td>
+            <td class="px-4 py-3 text-slate-600 font-bold">{{ row.record.time_in|date:"H:i" }}</td>
+            <td class="px-4 py-3 text-slate-600 font-bold">
+              {% if row.record.time_out %}
+                {{ row.record.time_out|date:"H:i" }}
+              {% else %}
+                <span class="text-emerald-600">Still inside</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 font-black
+              {% if row.is_long_stay %}text-red-600{% elif row.is_overtime %}text-amber-600{% else %}text-slate-700{% endif %}">
+              {{ row.duration_str }}
+            </td>
+            <td class="px-4 py-3">
+              {% if row.still_inside %}
+                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] font-black rounded uppercase">On Site</span>
+              {% elif row.is_long_stay %}
+                <span class="px-2 py-0.5 bg-red-100 text-red-700 text-[9px] font-black rounded uppercase">Long Stay</span>
+              {% elif row.is_overtime %}
+                <span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-[9px] font-black rounded uppercase">Overtime</span>
+              {% else %}
+                <span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-black rounded uppercase">Checked Out</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% else %}
+    <div class="px-6 py-20 text-center">
+      <p class="text-slate-400 font-bold text-sm">No check-ins recorded for {{ report_date|date:"d F Y" }}.</p>
+    </div>
+    {% endif %}
+
+  </div>
+
+</main>
+</section>
+{% endblock %}
